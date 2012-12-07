@@ -1,10 +1,10 @@
-#!/usr/bin/python
 import warnings
 import numpy as np
+
 from dipy.reconst.maskedview import MaskedView, _makearray, _filled
 from dipy.reconst.modelarray import ModelArray
 from dipy.data import get_sphere
-from ..core.geometry import vector_norm
+from dipy.core.geometry import vector_norm
 from dipy.core.onetime import auto_attr
 
 
@@ -12,23 +12,24 @@ class TensorModel(object):
     """ Diffusion Tensor
     """
     def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
-        """ A Diffusion Tensor Model [1]_, [2]_.
+        """ A Diffusion Tensor Model.
 
         Parameters
         ----------
         gtab : GradientTable
-        fit_method : str or callable 
-            str can be one of the following: 
+        fit_method : str or callable
+            str can be one of the following:
             'WLS' for weighted least squares
                 dti.wls_fit_tensor
             'LS' for ordinary least squares
                 dti.ols_fit_tensor
-        
+
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
 
-        args, kwargs : arguments and key-word arguments passed to the
-           fit_method. See dti.wls_fit_tensor, dti.ols_fit_tensor for details 
+        args, kwargs : tuple, dict
+            Arguments and key-word arguments passed to `fit_method`. See
+            :func:`dti.wls_fit_tensor`, :func:`dti.ols_fit_tensor` for detail.
 
         References
         ----------
@@ -44,9 +45,10 @@ class TensorModel(object):
             try:
                 self.fit_method = common_fit_methods[fit_method]
             except KeyError:
-                raise ValueError('"'+str(fit_method)+'" is not a known fit '
-                                 'method, the fit method should either be a '
-                                 'function or one of the common fit methods')
+                raise ValueError('"' + str(fit_method) + '" is not a known '
+                                 'fit method, the fit method should either '
+                                 'be a function or one of the common fit '
+                                 'methods (see docstring).')
         self.bvec = gtab.bvecs
         self.bval = gtab.bvals
         self.design_matrix = design_matrix(self.bvec.T, self.bval)
@@ -55,7 +57,7 @@ class TensorModel(object):
 
     def fit(self, data, mask=None):
         """
-        Fit method of the DTI model class
+        Fit method of the DTI model class.
 
         Parameters
         ----------
@@ -79,9 +81,10 @@ class TensorModel(object):
 
         dti_params = np.zeros(data.shape[:-1] + (12,))
 
-        dti_params[mask,:] = params_in_mask
+        dti_params[mask, :] = params_in_mask
 
         return TensorFit(self, dti_params)
+
 
 class TensorFit(object):
     def __init__(self, model, model_params):
@@ -99,7 +102,7 @@ class TensorFit(object):
         """
         For tracking - return the primary direction in each voxel
         """
-        return self.evecs[0,0]
+        return self.evecs[0, 0]
 
     @property
     def evals(self):
@@ -125,8 +128,9 @@ class TensorFit(object):
         # use einsum to do `evecs * evals * evecs.T` where * is matrix multiply
         return np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
 
-    def lower_triangular(self, b0=None):
-        return lower_triangular(self.quadratic_form, b0)
+    @property
+    def lower_triangular(self):
+        return lower_triangular(self.quadratic_form)
 
     @auto_attr
     def fa(self):
@@ -157,8 +161,9 @@ class TensorFit(object):
         # Make sure not to get nans:
         all_zero = np.allclose([ev1, ev2, ev3], 0)
 
-        fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
-                      / (ev1*ev1 + ev2*ev2 + ev3*ev3 + all_zero))
+        fa = np.sqrt(0.5 *
+                     ((ev1 - ev2) ** 2 + (ev2 - ev3) ** 2 + (ev3 - ev1) ** 2)
+                     / (ev1 * ev1 + ev2 * ev2 + ev3 * ev3 + all_zero))
 
         fa = wrap(np.asarray(fa))
         # Fill with zeros outside of the mask
@@ -189,7 +194,7 @@ class TensorFit(object):
         projection = np.dot(sphere.vertices, self.evecs)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            projection /=  np.sqrt(self.evals)
+            projection /= np.sqrt(self.evals)
             odf = (vector_norm(projection) ** -3) / lower
         # Zero evals are non-physical, we replace nans with zeros
         any_zero = (self.evals == 0).any(-1)
@@ -201,16 +206,16 @@ class TensorFit(object):
 
 def wls_fit_tensor(design_matrix, data, min_signal=1):
     r"""
-    Computes weighted least squares (WLS) fit to calculate self-diffusion 
+    Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
-    
+
     Parameters
     ----------
     design_matrix : array (g, 7)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
     data : array ([X, Y, Z, ...], g)
-        Data or response variables holding the data. Note that the last 
+        Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
     min_signal : default = 1
         All values below min_signal are repalced with min_signal. This is done
@@ -222,7 +227,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
         Eigenvalues from eigen decomposition of the tensor.
     eigvecs : array (..., 3, 3)
         Associated eigenvectors from eigen decomposition of the tensor.
-        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with 
+        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with
         eigvals[j])
 
 
@@ -232,21 +237,22 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
 
     Notes
     -----
-    In Chung, et al. 2006, the regression of the WLS fit needed an unbiased
-    preliminary estimate of the weights and therefore the ordinary least 
-    squares (OLS) estimates were used. A "two pass" method was implemented:
-    
+    In [1]_ the regression of the WLS fit needed an unbiased preliminary
+    estimate of the weights and therefore the ordinary least squares (OLS)
+    estimates were used. A "two pass" method was implemented:
+
         1. calculate OLS estimates of the data
-        2. apply the OLS estimates as weights to the WLS fit of the data 
-    
-    This ensured heteroscadasticity could be properly modeled for various 
+        2. apply the OLS estimates as weights to the WLS fit of the data
+
+    This ensured heteroscedasticity could be properly modeled for various
     types of bootstrap resampling (namely residual bootstrap).
-    
+
     .. math::
 
         y = \mathrm{data} \\
         X = \mathrm{design matrix} \\
-        \hat{\beta}_\mathrm{WLS} = \mathrm{desired regression coefficients (e.g. tensor)}\\
+        \hat{\beta}_\mathrm{WLS} = \mathrm{desired regression coefficients
+                                           (e.g. tensor)}\\
         \\
         \hat{\beta}_\mathrm{WLS} = (X^T W X)^{-1} X^T W y \\
         \\
@@ -255,7 +261,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
 
     References
     ----------
-    ..  _[1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+    ..  [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
         approaches for estimation of uncertainties of DTI parameters.
         NeuroImage 33, 531-541.
     """
@@ -276,7 +282,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     for param, sig in zip(dti_params, data_flat):
         param[0], param[1:] = _wls_iter(ols_fit, design_matrix, sig,
                                         min_signal=min_signal)
-    dti_params.shape = data.shape[:-1]+(12,)
+    dti_params.shape = data.shape[:-1] + (12,)
     dti_params = wrap(dti_params)
     return dti_params
 
@@ -285,11 +291,10 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
     '''
     Function used by wls_fit_tensor for later optimization.
     '''
-    sig = np.maximum(sig, min_signal) #throw out zero signals
+    sig = np.maximum(sig, min_signal)  # throw out zero signals
     log_s = np.log(sig)
     w = np.exp(np.dot(ols_fit, log_s))
-    D = np.dot(np.linalg.pinv(design_matrix * w[:,None]), w*log_s)
-    # D, _, _, _ = np.linalg.lstsq(design_matrix * w[:, None], log_s)
+    D, _, _, _ = np.linalg.lstsq(design_matrix * w[:, None], w * log_s)
     tensor = from_lower_triangular(D)
     return decompose_tensor(tensor, minimum_eval=np.finfo(float).eps)
 
@@ -298,7 +303,7 @@ def _ols_iter(inv_design, sig, min_signal=1):
     '''
     Function used by ols_fit_tensor for later optimization.
     '''
-    sig = np.maximum(sig, min_signal) #throw out zero signals
+    sig = np.maximum(sig, min_signal)  # throw out zero signals
     log_s = np.log(sig)
     D = np.dot(inv_design, log_s)
     tensor = from_lower_triangular(D)
@@ -307,21 +312,21 @@ def _ols_iter(inv_design, sig, min_signal=1):
 
 def ols_fit_tensor(design_matrix, data, min_signal=1):
     r"""
-    Computes ordinary least squares (OLS) fit to calculate self-diffusion 
+    Computes ordinary least squares (OLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
-    
+
     Parameters
     ----------
     design_matrix : array (g, 7)
         Design matrix holding the covariants used to solve for the regression
-        coefficients. Use design_matrix to build a valid design matrix from 
+        coefficients. Use `design_matrix` to build a valid design matrix from
         bvalues and a gradient table.
-    data : array ([X, Y, Z, ...], g)
-        Data or response variables holding the data. Note that the last 
+    data : array (X, Y, Z, ..., g)
+        Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-    min_signal : default = 1
-        All values below min_signal are repalced with min_signal. This is done
-        in order to avaid taking log(0) durring the tensor fitting.
+    min_signal : float
+        All values below min_signal are replaced with `min_signal`. This is
+        done in order to avaid taking ``log(0)`` durring the tensor fitting.
 
     Returns
     -------
@@ -329,9 +334,8 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
         Eigenvalues from eigen decomposition of the tensor.
     eigvecs : array (..., 3, 3)
         Associated eigenvectors from eigen decomposition of the tensor.
-        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with 
-        eigvals[j])
-
+        Eigenvectors are columnar (e.g. ``eigvecs[:,j]`` is associated with
+        ``eigvals[j]``)
 
     See Also
     --------
@@ -345,20 +349,18 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
 
         y = \mathrm{data} \\
         X = \mathrm{design matrix} \\
-    
+
         \hat{\beta}_\mathrm{OLS} = (X^T X)^{-1} X^T y
 
     References
     ----------
-    ..  [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
-        approaches for estimation of uncertainties of DTI parameters.
-        NeuroImage 33, 531-541.
+    .. [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+       approaches for estimation of uncertainties of DTI parameters.
+       NeuroImage 33, 531-541.
     """
 
     data, wrap = _makearray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
-    evals = np.empty((len(data_flat), 3))
-    evecs = np.empty((len(data_flat), 3, 3))
     dti_params = np.empty((len(data_flat), 4, 3))
 
     #obtain OLS fitting matrix
@@ -372,7 +374,7 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
     for param, sig in zip(dti_params, data_flat):
         param[0], param[1:] = _ols_iter(inv_design, sig, min_signal)
 
-    dti_params.shape = data.shape[:-1]+(12,)
+    dti_params.shape = data.shape[:-1] + (12,)
     dti_params = wrap(dti_params)
     return dti_params
 
@@ -389,13 +391,18 @@ def _ols_fit_matrix(design_matrix):
 
     Example:
     --------
-    ols_fit = _ols_fit_matrix(design_mat) 
+    ols_fit = _ols_fit_matrix(design_mat)
     ols_data = np.dot(ols_fit, data)
     """
 
-    U,S,V = np.linalg.svd(design_matrix, False)
+    U, S, V = np.linalg.svd(design_matrix, False)
     return np.dot(U, U.T)
 
+
+common_fit_methods = {'WLS': wls_fit_tensor,
+                      'LS': ols_fit_tensor,
+                      'OLS': ols_fit_tensor,
+                      }
 
 _lt_indices = np.array([[0, 1, 3],
                         [1, 2, 4],
@@ -427,33 +434,25 @@ _lt_rows = np.array([0, 1, 1, 2, 2, 2])
 _lt_cols = np.array([0, 0, 1, 0, 1, 2])
 
 
-def lower_triangular(tensor, b0=None):
+def lower_triangular(tensor):
     """
-    Returns the six lower triangular values of the tensor and a dummy variable
-    if b0 is not None
+    Returns the six lower triangular values of the tensor.
 
-    Parameters:
+    Parameters
     ----------
-    tensor - array_like (..., 3, 3)
-        a collection of 3, 3 diffusion tensors
-    b0 - float
-        if b0 is not none log(b0) is returned as the dummy variable
+    tensor : array_like (..., 3, 3)
+        A collection of diffusion tensors of shape ``(3, 3)``.
 
     Returns:
     -------
-    D - ndarray
-        If b0 is none, then the shape will be (..., 6) otherwise (..., 7)
+    D : (..., 6) ndarray
+        The lower triangular values of the tensor data.
 
     """
     if tensor.shape[-2:] != (3, 3):
         raise ValueError("Diffusion tensors should be (..., 3, 3)")
-    if b0 is None:
-        return tensor[..., _lt_rows, _lt_cols]
-    else:
-        D = np.empty(tensor.shape[:-2] + (7,), dtype=tensor.dtype)
-        D[..., 6] = -np.log(b0)
-        D[..., :6] = tensor[..., _lt_rows, _lt_cols]
-        return D
+
+    return tensor[..., _lt_rows, _lt_cols]
 
 
 def tensor_eig_from_lo_tri(data):
@@ -484,7 +483,7 @@ def tensor_eig_from_lo_tri(data):
         dti_params[ii, 0] = eigvals
         dti_params[ii, 1:] = eigvecs
 
-    dti_params.shape = data.shape[:-1]+(12,)
+    dti_params.shape = data.shape[:-1] + (12,)
     dti_params = wrap(dti_params)
     return dti_params
 
@@ -536,7 +535,7 @@ def decompose_tensor(tensor, minimum_eval=0):
 
 def design_matrix(gtab, bval, dtype=None):
     """
-    Constructs design matrix for DTI weighted least squares or least squares 
+    Constructs design matrix for DTI weighted least squares or least squares
     fitting. (Basser et al., 1994a)
 
     Parameters
@@ -548,23 +547,23 @@ def design_matrix(gtab, bval, dtype=None):
     dtype : string
         Parameter to control the dtype of returned designed matrix
 
-	Returns
-	-------
-	design_matrix : array (g,7)
-		Design matrix or B matrix assuming Gaussian distributed tensor model.
-		Note: design_matrix[j,:] = (Bxx,Byy,Bzz,Bxy,Bxz,Byz,dummy)
+    Returns
+    -------
+    design_matrix : array (g,7)
+        Design matrix or B matrix assuming Gaussian distributed tensor model.
+        Note: design_matrix[j,:] = (Bxx,Byy,Bzz,Bxy,Bxz,Byz,dummy)
     """
     G = gtab
-    B = np.zeros((bval.size, 7), dtype = G.dtype)
+    B = np.zeros((bval.size, 7), dtype=G.dtype)
     if gtab.shape[1] != bval.shape[0]:
-        raise ValueError('The number of b values and gradient directions must'
-                          +' be the same')
-    B[:, 0] = G[0, :] * G[0, :] * 1. * bval   #Bxx
-    B[:, 1] = G[0, :] * G[1, :] * 2. * bval   #Bxy
-    B[:, 2] = G[1, :] * G[1, :] * 1. * bval   #Byy
-    B[:, 3] = G[0, :] * G[2, :] * 2. * bval   #Bxz
-    B[:, 4] = G[1, :] * G[2, :] * 2. * bval   #Byz
-    B[:, 5] = G[2, :] * G[2, :] * 1. * bval   #Bzz
+        raise ValueError('The number of b values and gradient directions must '
+                         'be the same')
+    B[:, 0] = G[0, :] * G[0, :] * 1. * bval  # Bxx
+    B[:, 1] = G[0, :] * G[1, :] * 2. * bval  # Bxy
+    B[:, 2] = G[1, :] * G[1, :] * 1. * bval  # Byy
+    B[:, 3] = G[0, :] * G[2, :] * 2. * bval  # Bxz
+    B[:, 4] = G[1, :] * G[2, :] * 2. * bval  # Byz
+    B[:, 5] = G[2, :] * G[2, :] * 1. * bval  # Bzz
     B[:, 6] = np.ones(bval.size)
     return -B
 
@@ -583,20 +582,15 @@ def quantize_evecs(evecs, odf_vertices=None):
     -------
     IN : ndarray
     '''
-    max_evecs=evecs[...,:,0]
-    if odf_vertices==None:
+    max_evecs = evecs[..., :, 0]
+
+    if odf_vertices is None:
         odf_vertices = get_sphere('symmetric362').vertices
-    tup=max_evecs.shape[:-1]
-    mec=max_evecs.reshape(np.prod(np.array(tup)),3)
-    IN=np.array([np.argmin(np.dot(odf_vertices,m)) for m in mec])
-    IN=IN.reshape(tup)
-    return IN
 
-common_fit_methods = {'WLS': wls_fit_tensor,
-                      'LS': ols_fit_tensor,
-                      'OLS': ols_fit_tensor,
-                     }
-
+    tup = max_evecs.shape[:-1]
+    mec = max_evecs.reshape(np.prod(np.array(tup)), 3)
+    IN = np.array([np.argmin(np.dot(odf_vertices, m)) for m in mec])
+    return IN.reshape(tup)
 
 
 # For backwards compatibility:
@@ -663,7 +657,8 @@ class Tensor(TensorFit, ModelArray):
             Self diffusion tensor calculated from cached eigenvalues and
             eigenvectors.
         mask : array
-            True in voxels where a tensor was fit, false if the voxel was skipped
+            True in voxels where a tensor was fit, false if the voxel was
+            skipped.
         B : array (g, 7)
             Design matrix or B matrix constructed from given gradient table and
             b-value vector.
@@ -687,16 +682,19 @@ class Tensor(TensorFit, ModelArray):
         For a complete example have a look at the main dipy/examples folder
 
         """
-        warnings.warn("This implementation of DTI will be deprecated in a future release, consider using TensorModel", DeprecationWarning)
+        warnings.warn("This implementation of DTI will be deprecated in a "
+                      "future release, consider using TensorModel",
+                      DeprecationWarning)
         if not callable(fit_method):
             try:
                 fit_method = common_fit_methods[fit_method]
             except KeyError:
-                raise ValueError('"'+str(fit_method)+'" is not a known fit '+
-                                 'method, the fit method should either be a '+
-                                 'function or one of the common fit methods')
+                raise ValueError('"' + str(fit_method) + '" is not a known '
+                                 'fit method, the fit method should either '
+                                 'be a function or one of the common fit '
+                                 'methods (see docstring).')
 
-        #64 bit design matrix makes for faster pinv
+        # 64 bit design matrix makes for faster pinv
         B = design_matrix(b_vectors.T, b_values)
         self.B = B
 
@@ -713,8 +711,8 @@ class Tensor(TensorFit, ModelArray):
 
         #if mask is all False
         if not mask.any():
-            raise ValueError('between mask and thresh, there is no data to '+
-            'fit')
+            raise ValueError('Between `mask` and `thresh`, there is no '
+                             'data to fit.')
 
         #and the mask is not all True
         if not mask.all():
@@ -781,12 +779,12 @@ class Tensor(TensorFit, ModelArray):
         else:
             all_zero = 0.
 
-        fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
-                      / (ev1*ev1 + ev2*ev2 + ev3*ev3 + all_zero))
+        fa = np.sqrt(0.5 *
+                     ((ev1 - ev2) ** 2 + (ev2 - ev3) ** 2 + (ev3 - ev1) ** 2)
+                     / (ev1 * ev1 + ev2 * ev2 + ev3 * ev3 + all_zero))
 
         fa = wrap(np.asarray(fa))
         return _filled(fa, fill_value)
-
 
     def md(self):
         r"""
