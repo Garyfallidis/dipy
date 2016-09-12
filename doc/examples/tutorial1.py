@@ -1,8 +1,9 @@
 import numpy as np
 from dipy.viz import actor, window, widget
-from skimage import exposure
-from skimage.morphology import disk
-from skimage.filters import rank
+# from skimage import exposure
+# from skimage.morphology import disk
+# from skimage.filters import rank
+
 
 def histogram_normalization(data):
 
@@ -17,14 +18,40 @@ def histogram_normalization(data):
     return m[0,1], m[2,2]
 
 
+def upper_bound_by_vox_count_percentage(data, percent=0.01):
+    """ Find the upper bound for visualization of medical images
 
-def interact_volumes(data, affine, world_coords=True):
+    Calculate the histogram of the image and go right to left until you find
+    the bound that contains more than a percentage of the image.
+
+    Parameters
+    ----------
+    data : ndarray
+    percent : float
+
+    Returns
+    -------
+    upper_bound : float
+    """
+
+    values, bounds = np.histogram(data, 20)
+    total_voxels = np.prod(data.shape)
+    agg = 0
+
+    for i in range(len(values) - 1, 0, -1):
+        agg += values[i]
+        if agg/float(total_voxels) > percent:
+            return bounds[i]
+
+
+def interact_volumes(data, affine, world_coords=True, value_range=None):
 
     shape = data.shape
 
     ren = window.Renderer()
     ren.background((0, 0, .6))
 
+    """
     g,h = np.histogram(data)
     m = np.zeros((10,3))
     low = data.min()
@@ -41,12 +68,14 @@ def interact_volumes(data, affine, world_coords=True):
             low = m[i,1]
         if g[7] == m[i,0]:
             high = m[i,2]
+    """
 
-    #l,h = histogram_normalization(data)
+    # l,h = histogram_normalization(data)
     if not world_coords:
-        image_actor = actor.slicer(data, affine=np.eye(4))#, value_range=(50,h[7]))
+        image_actor = actor.slicer(data, affine=np.eye(4),
+                                   value_range=value_range)
     else:
-        image_actor = actor.slicer(data, affine)#, value_range=(50,h[7]))
+        image_actor = actor.slicer(data, affine, value_range=value_range)
 
     slicer_opacity = 1.
     image_actor.opacity(slicer_opacity)
@@ -83,12 +112,11 @@ def interact_volumes(data, affine, world_coords=True):
             slider.place(ren)
             size = obj.GetSize()
 
-
     show_m.initialize()
     show_m.add_window_callback(win_callback)
     show_m.render()
     show_m.start()
-    return m
+    return
     # ren.zoom(1.5)
     # ren.reset_clipping_range()
 
@@ -97,7 +125,8 @@ def interact_volumes(data, affine, world_coords=True):
 #               reset_camera=False)
 
 
-dname = "/Users/tiwanyan/Data/Sherbrooke_Subj_1/"
+# dname = "/Users/tiwanyan/Data/Sherbrooke_Subj_1/"
+dname = "/home/eleftherios/Data/3_subjects_for_dipy/subj_1/"
 fbvals = dname + "dwi.bval"
 fbvecs = dname + "dwi.bvec"
 fdwi = dname + "dwi.nii.gz"
@@ -139,8 +168,11 @@ for i in range(176):
     t1[:,:,i] = rank.equalize(t1[:,:,i],selem = selem)
 """
 
-plt.hist(t1.ravel(), 100)
-
-
 # m = interact_volumes(data[..., 0], affine, False)
-# n = interact_volumes(t1, affine_t1, True)
+
+upper_bound = upper_bound_by_vox_count_percentage(t1, 0.005)
+
+n = interact_volumes(t1, affine_t1, True, value_range=(0, upper_bound))
+
+from ipdb import set_trace
+set_trace()
