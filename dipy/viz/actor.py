@@ -749,3 +749,90 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
         mapper.SetInputData(polydata)
 
     return mapper
+
+
+def _makeNd(array, ndim):
+    """Pads as many 1s at the beginning of array's shape as are need to give
+    array ndim dimensions."""
+    new_shape = (1,) * (ndim - array.ndim) + array.shape
+    return array.reshape(new_shape)
+
+
+def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
+                scale=2.2, colors=(1, 0, 0)):
+    """ Visualize peak directions as given from ``peaks_from_model``
+
+    Parameters
+    ----------
+    peaks_dirs : ndarray
+        Peak directions. The shape of the array can be (M, 3) or (X, M, 3) or
+        (X, Y, M, 3) or (X, Y, Z, M, 3)
+    peaks_values : ndarray
+        Peak values. The shape of the array can be (M, ) or (X, M) or
+        (X, Y, M) or (X, Y, Z, M)
+
+    scale : float
+        Distance between spheres
+
+    colors : ndarray or tuple
+        Peak colors
+
+    Returns
+    -------
+    vtkActor
+
+    See Also
+    --------
+    dipy.viz.fvtk.sphere_funcs
+
+    """
+    peaks_dirs = np.asarray(peaks_dirs)
+    if peaks_dirs.ndim > 5:
+        raise ValueError("Wrong shape")
+
+    peaks_dirs = _makeNd(peaks_dirs, 5)
+    if peaks_values is not None:
+        peaks_values = _makeNd(peaks_values, 4)
+
+    grid_shape = np.array(peaks_dirs.shape[:3])
+
+    if mask is None:
+        mask = np.ones(grid_shape).astype(np.bool)
+
+    class PeakSlicerActor(vtk.vtkLODActor):
+
+        def display_extent(self, x1, x2, y1, y2, z1, z2):
+
+            tmp_mask = np.zeros(grid_shape, dtype=np.bool)
+            tmp_mask[x1:x2, y1:y2, z1:z2] = True
+            tmp_mask = np.bitwise_and(tmp_mask, mask)
+
+            ijk = np.ascontiguousarray(np.array(np.nonzero(tmp_mask)).T)
+            if affine is not None:
+                ijk = np.ascontiguousarray(apply_affine(affine, ijk))
+            list_dirs = []
+            for center in ijk:
+                center = tuple(center)
+                xyz = scale * (center - grid_shape / 2.)[:, None]
+                xyz = xyz.T
+                for i in range(peaks_dirs[center].shape[-2]):
+                    if peaks_values is not None:
+                        pv = peaks_values[center][i]
+                    else:
+                        pv = 1.
+                    symm = np.vstack((-peaks_dirs[center][i] * pv + xyz,
+                                      peaks_dirs[center][i] * pv + xyz))
+                    list_dirs.append(symm)
+            # from ipdb import set_trace
+            # set_trace()
+
+            self.mapper = line(list_dirs, colors).GetMapper()
+            self.SetMapper(self.mapper)
+
+    peak_actor = PeakSlicerActor()
+
+    I, J, K = grid_shape
+    peak_actor.display_extent(0, I, 0, J,
+                              int(np.floor(K / 2)), int(np.floor(K / 2 + 1)))
+
+    return peak_actor
