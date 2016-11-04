@@ -386,6 +386,28 @@ def test_odf_slicer(interactive=False):
         npt.assert_equal(report.colors_found[0], True)
 
 
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_peak_slicer():
+
+    _peak_dirs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype='f4')
+    # peak_dirs.shape = (1, 1, 1) + peak_dirs.shape
+
+    peak_dirs = np.zeros((11, 11, 11, 3, 3))
+
+    peak_dirs[:, :, :] = _peak_dirs
+
+    from dipy.viz import actor, window
+
+    renderer = window.Renderer()
+    peak_actor = actor.peak_slicer(peak_dirs)
+    renderer.add(peak_actor)
+    window.show(renderer)
+
+    for i in range(11):
+        peak_actor.display_extent(0, 11, 0, 11, i, i)
+    window.show(renderer)
+
+
 if __name__ == "__main__":
-    test_odf_slicer()
-    #npt.run_module_suite()
+    npt.run_module_suite()
