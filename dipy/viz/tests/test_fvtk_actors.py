@@ -402,12 +402,20 @@ def test_peak_slicer():
     renderer = window.Renderer()
     peak_actor = actor.peak_slicer(peak_dirs)
     renderer.add(peak_actor)
+    renderer.add(actor.axes((11, 11, 11)))
     window.show(renderer)
 
+    renderer.clear()
+    renderer.add(peak_actor)
+    renderer.add(actor.axes((11, 11, 11)))
     for i in range(11):
-        peak_actor.display_extent(0, 11, 0, 11, i, i)
-    window.show(renderer)
+        peak_actor.display_extent(0, 10, 0, 10, i, i)
+        window.show(renderer)
 
+    for j in range(11):
+        peak_actor.display_extent(0, 10, j, j, 0, 10)
+        window.show(renderer)
 
 if __name__ == "__main__":
-    npt.run_module_suite()
+    test_peak_slicer()
+    #npt.run_module_suite()

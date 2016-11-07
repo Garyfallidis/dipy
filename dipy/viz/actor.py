@@ -759,7 +759,7 @@ def _makeNd(array, ndim):
 
 
 def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
-                scale=2.2, colors=(1, 0, 0)):
+                colors=(1, 0, 0)):
     """ Visualize peak directions as given from ``peaks_from_model``
 
     Parameters
@@ -770,10 +770,6 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
     peaks_values : ndarray
         Peak values. The shape of the array can be (M, ) or (X, M) or
         (X, Y, M) or (X, Y, Z, M)
-
-    scale : float
-        Distance between spheres
-
     colors : ndarray or tuple
         Peak colors
 
@@ -804,35 +800,48 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
         def display_extent(self, x1, x2, y1, y2, z1, z2):
 
             tmp_mask = np.zeros(grid_shape, dtype=np.bool)
-            tmp_mask[x1:x2, y1:y2, z1:z2] = True
+            tmp_mask[x1:x2 + 1, y1:y2 + 1, z1:z2 + 1] = True
             tmp_mask = np.bitwise_and(tmp_mask, mask)
 
             ijk = np.ascontiguousarray(np.array(np.nonzero(tmp_mask)).T)
+            if len(ijk) == 0:
+                self.SetMapper(None)
+                return
             if affine is not None:
                 ijk = np.ascontiguousarray(apply_affine(affine, ijk))
             list_dirs = []
             for center in ijk:
-                center = tuple(center)
-                xyz = scale * (center - grid_shape / 2.)[:, None]
+                # center = tuple(center)
+                xyz = center[:, None]
                 xyz = xyz.T
-                for i in range(peaks_dirs[center].shape[-2]):
+                for i in range(peaks_dirs[tuple(center)].shape[-2]):
                     if peaks_values is not None:
                         pv = peaks_values[center][i]
                     else:
                         pv = 1.
-                    symm = np.vstack((-peaks_dirs[center][i] * pv + xyz,
-                                      peaks_dirs[center][i] * pv + xyz))
+                    symm = np.vstack((-peaks_dirs[tuple(center)][i] * pv + xyz,
+                                      peaks_dirs[tuple(center)][i] * pv + xyz))
                     list_dirs.append(symm)
             # from ipdb import set_trace
             # set_trace()
-
             self.mapper = line(list_dirs, colors).GetMapper()
             self.SetMapper(self.mapper)
+
+        def display(self, x=None, y=None, z=None):
+            if x is None and y is None and z is None:
+                self.display_extent(0, I - 1, 0, J - 1,
+                                    int(np.floor(K/2)), int(np.floor(K/2)))
+            if x is not None:
+                self.display_extent(x, x, 0, J - 1, 0, K - 1)
+            if y is not None:
+                self.display_extent(0, I - 1, y, y, 0, K - 1)
+            if z is not None:
+                self.display_extent(0, I - 1, 0, J - 1, z, z)
 
     peak_actor = PeakSlicerActor()
 
     I, J, K = grid_shape
-    peak_actor.display_extent(0, I, 0, J,
-                              int(np.floor(K / 2)), int(np.floor(K / 2 + 1)))
+    peak_actor.display_extent(0, I - 1, 0, J - 1,
+                              int(np.floor(K / 2)), int(np.floor(K / 2)))
 
     return peak_actor
