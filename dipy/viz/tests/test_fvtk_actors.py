@@ -481,8 +481,9 @@ def test_full_data():
 
     print(np.sum(np.isnan(gfa)))
 
-    slice_actor = actor.slicer(np.isnan(gfa))
+    slice_actor = actor.slicer(peaks.peak_values[..., 0] + 1)
 
+    set_trace()
     # odfs = sh_to_sf(peaks.shm_coeff, peaks.sphere, 8)
     # odf_actor = actor.odf_slicer(odfs, mask=mask, sphere=peaks.sphere)
 
@@ -491,8 +492,8 @@ def test_full_data():
     renderer.add(actor.axes((11, 11, 11)))
     window.show(renderer)
 
-    # for i in range(145/2 - 10, 145/2 + 10):
-    for i in range(145):
+    for i in range(145/2 - 10, 145/2 + 10):
+    # for i in range(145):
         print(i)
         # peak_actor.display(None, None, i)
         slice_actor.display(None, None, i)
