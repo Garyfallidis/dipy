@@ -868,3 +868,41 @@ def qbx_with_merge(streamlines, thresholds,  nb_pts=20):
     merged_cluster_map.refdata = streamlines
 
     return merged_cluster_map
+
+def qbx_with_multiple_merge(streamlines, thresholds, added_layer,  nb_pts=20):
+
+    sample_streamlines = set_number_of_points(streamlines, nb_pts)
+    for i in added_layer:
+        thresholds.append(i)
+
+    qbx = QuickBundlesX(thresholds,
+                        metric=AveragePointwiseEuclideanMetric())
+
+    qbx_clusters = qbx.cluster(sample_streamlines)
+    merged_cluster_map_list = []
+    for i in range(len(added_layer)):
+        qbx_merge = QuickBundlesX([added_layer[i]],
+                                  metric=AveragePointwiseEuclideanMetric())
+
+        final_level = len(thresholds) - len(added_layer) + i + 1
+        #np.random.seed(0)
+        qbx_ordering_final = np.random.choice(
+            len(qbx_clusters.get_clusters(final_level)),
+            len(qbx_clusters.get_clusters(final_level)), replace=False)
+
+        qbx_merged_cluster_map = qbx_merge.cluster(
+            qbx_clusters.get_clusters(final_level).centroids,
+            ordering=qbx_ordering_final).get_clusters(1)
+
+        qbx_cluster_map = qbx_clusters.get_clusters(final_level)
+
+        merged_cluster_map = ClusterMapCentroid()
+        for cluster in qbx_merged_cluster_map:
+            merged_cluster = ClusterCentroid(centroid=cluster.centroid)
+            for i in cluster.indices:
+                merged_cluster.indices.extend(qbx_cluster_map[i].indices)
+            merged_cluster_map.add_cluster(merged_cluster)
+
+        merged_cluster_map.refdata = streamlines
+        merged_cluster_map_list.append(merged_cluster_map)
+    return merged_cluster_map_list

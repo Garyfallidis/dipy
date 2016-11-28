@@ -535,7 +535,7 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
 
     return DM
 
-
+from time import time
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def bundles_distances_mdf(tracksA, tracksB):
@@ -589,11 +589,11 @@ def bundles_distances_mdf(tracksA, tracksB):
         float d[2]
     t_len = tracksA32[0].shape[0]
 
-    for i from 0 <= i < lentA:
+    for i in range(lentA):
         t1 = tracksA32[i]
         #t1_len = t1.shape[0]
         t1_ptr = <cnp.float32_t *>t1.data
-        for j from 0 <= j < lentB:
+        for j in range(lentB):
             t2 = tracksB32[j]
             #t2_len = t2.shape[0]
             t2_ptr = <cnp.float32_t *>t2.data
