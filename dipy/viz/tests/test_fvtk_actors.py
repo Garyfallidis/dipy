@@ -416,93 +416,9 @@ def test_peak_slicer():
         peak_actor.display_extent(0, 10, j, j, 0, 10)
         window.show(renderer)
 
-from dipy.direction.peaks import PeaksAndMetrics
-from dipy.core.sphere import Sphere
-
-def load_peaks(fname, verbose=True):
-    """ Load PeaksAndMetrics NPZ file
-    """
-
-    pam_dix = np.load(fname)
-
-    pam = PeaksAndMetrics()
-    pam.affine = pam_dix['affine']
-    pam.peak_dirs = pam_dix['peak_dirs']
-    pam.peak_values = pam_dix['peak_values']
-    pam.peak_indices = pam_dix['peak_indices']
-    pam.shm_coeff = pam_dix['shm_coeff']
-    pam.sphere = Sphere(xyz=pam_dix['sphere_vertices'])
-    pam.B = pam_dix['B']
-    pam.total_weight = pam_dix['total_weight']
-    pam.ang_thr = pam_dix['ang_thr']
-    pam.gfa = pam_dix['gfa']
-    pam.qa = pam_dix['qa']
-    pam.odf = pam_dix['odf']
-
-    if verbose:
-        print('Affine')
-        print(pam.affine)
-        print('Dirs Shape')
-        print(pam.peak_dirs.shape)
-        print('SH Shape')
-        print(pam.shm_coeff.shape)
-        print('ODF')
-        print(pam.odf.shape)
-        print('Total weight')
-        print(pam.total_weight)
-        print('Angular threshold')
-        print(pam.ang_thr)
-        print('Sphere vertices shape')
-        print(pam.sphere.vertices.shape)
-
-    return pam
 
 
-def test_full_data():
-    fname = '/home/elef/Data/Avesani_HCP/sub-102311_shore_peaks.npz'
-    peaks = load_peaks(fname)
 
-    from dipy.viz import actor, window
-    from ipdb import set_trace
-    from dipy.reconst.shm import sh_to_sf
-
-    renderer = window.Renderer()
-    renderer.background((1, 1, 1))
-
-    peak_actor = actor.peak_slicer(peaks.peak_dirs)
-    # renderer.add(peak_actor)
-    gfa = peaks.gfa
-    #gfa[np.isnan(gfa)] = 100
-    #mask = gfa > 0.05
-
-    from dipy.viz.colormap import create_colormap, colormap_lookup_table
-    # cmap = create_colormap(gfa.ravel(), 'jet')
-    lut = colormap_lookup_table()
-
-    print(np.sum(np.isnan(gfa)))
-
-    slice_actor = actor.slicer(peaks.peak_values[..., 0] + 1)
-
-    set_trace()
-    # odfs = sh_to_sf(peaks.shm_coeff, peaks.sphere, 8)
-    # odf_actor = actor.odf_slicer(odfs, mask=mask, sphere=peaks.sphere)
-
-    # renderer.add(odf_actor)
-    renderer.add(slice_actor)
-    renderer.add(actor.axes((11, 11, 11)))
-    window.show(renderer)
-
-    for i in range(145/2 - 10, 145/2 + 10):
-    # for i in range(145):
-        print(i)
-        # peak_actor.display(None, None, i)
-        slice_actor.display(None, None, i)
-        # odf_actor.display(None, None, i)
-        window.show(renderer, size=(1000, 1000))
-
-    set_trace()
-
-    a = 5
 
 if __name__ == "__main__":
     #test_peak_slicer()
