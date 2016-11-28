@@ -815,8 +815,10 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
                 xyz = center[:, None]
                 xyz = xyz.T
                 for i in range(peaks_dirs[tuple(center)].shape[-2]):
+                    # from ipdb import set_trace
+                    # set_trace()
                     if peaks_values is not None:
-                        pv = peaks_values[center][i]
+                        pv = peaks_values[tuple(center)][i]
                     else:
                         pv = 1.
                     symm = np.vstack((-peaks_dirs[tuple(center)][i] * pv + xyz,
