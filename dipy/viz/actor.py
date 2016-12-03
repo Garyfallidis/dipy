@@ -759,7 +759,9 @@ def _makeNd(array, ndim):
 
 
 def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
-                colors=(1, 0, 0)):
+                colors=(1, 0, 0), opacity=1, linewidth=1,
+                lod=False, lod_points=10 ** 4, lod_points_size=3,
+                lookup_colormap=None):
     """ Visualize peak directions as given from ``peaks_from_model``
 
     Parameters
@@ -770,8 +772,41 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
     peaks_values : ndarray
         Peak values. The shape of the array can be (M, ) or (X, M) or
         (X, Y, M) or (X, Y, Z, M)
-    colors : ndarray or tuple
-        Peak colors
+
+    colors : array (N, 3), list of arrays, tuple (3,), array (K,), None
+        If None then a standard orientation colormap is used for every line.
+        If one tuple of color is used. Then all streamlines will have the same
+        colour.
+        If an array (N, 3) is given, where N is equal to the number of lines.
+        Then every line is coloured with a different RGB color.
+        If a list of RGB arrays is given then every point of every line takes
+        a different color.
+        If an array (K, ) is given, where K is the number of points of all
+        lines then these are considered as the values to be used by the
+        colormap.
+        If an array (L, ) is given, where L is the number of streamlines then
+        these are considered as the values to be used by the colormap per
+        streamline.
+        If an array (X, Y, Z) or (X, Y, Z, 3) is given then the values for the
+        colormap are interpolated automatically using trilinear interpolation.
+
+    opacity : float, optional
+        Default is 1.
+
+    linewidth : float, optional
+        Line thickness. Default is 1.
+
+    lod : bool
+        Use vtkLODActor(level of detail) rather than vtkActor. Default is False.
+        Level of detail actors do not render the full geometry when the
+        frame rate is low.
+    lod_points : int
+        Number of points to be used when LOD is in effect. Default is 10000.
+    lod_points_size : int
+        Size of points when lod is in effect. Default is 3.
+    lookup_colormap : bool, optional
+        Add a default lookup table to the colormap. Default is None which calls
+        :func:`dipy.viz.actor.colormap_lookup_table`.
 
     Returns
     -------
@@ -826,7 +861,11 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
                     list_dirs.append(symm)
             # from ipdb import set_trace
             # set_trace()
-            self.mapper = line(list_dirs, colors).GetMapper()
+            self.mapper = line(list_dirs, colors=colors,
+                               opacity=opacity, linewidth=linewidth,
+                               lod=lod, lod_points=lod_points,
+                               lod_points_size=lod_points_size,
+                               lookup_colormap=lookup_colormap).GetMapper()
             self.SetMapper(self.mapper)
 
         def display(self, x=None, y=None, z=None):

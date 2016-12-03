@@ -421,6 +421,5 @@ def test_peak_slicer():
 
 
 if __name__ == "__main__":
-    #test_peak_slicer()
+    test_peak_slicer()
     #npt.run_module_suite()
-    test_full_data()
