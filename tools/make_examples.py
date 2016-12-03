@@ -121,8 +121,9 @@ for script in validated_examples:
     figure_basename = os.path.join('fig', os.path.splitext(script)[0])
     print(script)
     execfile(script, namespace)
+    plt.close('all')
     del namespace
-    # plt.close('all')
+
 
 if use_xvfb:
     display.stop()
