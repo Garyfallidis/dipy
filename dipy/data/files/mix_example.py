@@ -39,10 +39,10 @@ gtab = gradient_table(bvals, bvecs, big_delta=big_delta,
                       b0_threshold=0, atol=1e-2)
 
 
-def activax_exvivo_model(data, x, bvals, bvecs, G, small_delta, big_delta,
-                         sigma, gamma=gamma,
-                         D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
-                         debug=False):
+def activax_exvivo_params(x, bvals, bvecs, G, small_delta, big_delta,
+                          gamma=gamma,
+                          D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
+                          debug=False):
     """ Aax_exvivo_nlin
     """
 
@@ -134,9 +134,9 @@ def test_activax_exvivo_model():
     x = np.array([0.5, 0.5, 10, 0.8])
     sigma = 0.05
     L1, summ, summ_rows, gper, L2, yhat_cylinder, \
-        yhat_zeppelin, yhat_ball, yhat_one = activax_exvivo_model(
+        yhat_zeppelin, yhat_ball, yhat_one = activax_exvivo_params(
             data, x, bvals, bvecs, G, small_delta, big_delta,
-            sigma, gamma=gamma, D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
+            gamma=gamma, D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
             debug=True)
 
     assert_almost_equal(L1[3], 3.96735278865)
@@ -166,17 +166,49 @@ def test_activax_exvivo_model():
 
     assert_almost_equal(yhat_ball[25], 26.3995293508)
 
+
+def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
+                         gamma=gamma,
+                         D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
+                         debug=False):
+
+    res = activax_exvivo_params(x, bvals, bvecs, G, small_delta, big_delta,
+                                gamma=gamma,
+                                D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
+                                debug=False)
+
+    yhat_cylinder, yhat_zeppelin, yhat_ball, yhat_dot = res
+
+    phi = np.vstack([yhat_cylinder, yhat_zeppelin, yhat_ball, yhat_dot]).T
+    phi = np.ascontiguousarray(phi)
+
+    return np.exp(-phi)
+
+
+def activeax_cost_one(data, phi, sigma):
+
+    phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T) # moore-penrose
+    f = np.dot(phi_mp, data)
+    yhat = np.dot(phi, f) - sigma
+    return np.dot((data - yhat).T, data - yhat)
+
+
+def test_activax_exvivo_model():
+    x = np.array([0.5, 0.5, 10, 0.8])
+    sigma = 0.05 # offset gaussian constant (not really needed)
+    phi = activax_exvivo_model(x, bvals, bvecs, G,
+                               small_delta, big_delta)
+    print(phi.shape)
+    assert_equal(phi.shape, (372, 4))
+    error_one =  activeax_cost_one(data[0, 0, 0], phi, sigma)
+
+    assert_almost_equal(error_one, 2.5070277363920468)
+
+
 test_activax_exvivo_model()
 
-"""
-%%%%%%%%%%%%%%%%%%%%%%%%%  Ball %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nG5= (D_iso * b); % Ball out put
-%%%%%%%%%%%%%%%%%%%%%%%% Dot%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nG6=g*[0 0 0]';  % dot out put
 
-A_b=[exp(-nG3) exp(nG4) exp(-nG5) exp(-nG6)];
-a_hat=((inv(A_b'*A_b))*A_b')*ydata1;
-y_hat=(A_b*a_hat-sigma);    % for offset gaussian
-f=(ydata1-y_hat)'*(ydata1-y_hat);
-"""
 
+
+
+test_activax_exvivo_model()
