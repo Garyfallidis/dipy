@@ -185,12 +185,12 @@ def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
     return np.exp(-phi)
 
 
-def activeax_cost_one(data, phi, sigma):
+def activeax_cost_one(phi, signal): # sigma
 
     phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T) # moore-penrose
-    f = np.dot(phi_mp, data)
-    yhat = np.dot(phi, f) - sigma
-    return np.dot((data - yhat).T, data - yhat)
+    f = np.dot(phi_mp, signal)
+    yhat = np.dot(phi, f) # - sigma
+    return np.dot((signal - yhat).T, signal - yhat)
 
 
 def test_activax_exvivo_model():
@@ -200,10 +200,18 @@ def test_activax_exvivo_model():
                                small_delta, big_delta)
     print(phi.shape)
     assert_equal(phi.shape, (372, 4))
-    error_one =  activeax_cost_one(data[0, 0, 0], phi, sigma)
+    error_one =  activeax_cost_one(phi, data[0, 0, 0])
 
     assert_almost_equal(error_one, 2.5070277363920468)
 
+
+def cost_one(x, data, bvals, bvecs, G, small_delta, big_delta):
+    phi = activax_exvivo_model(x, bvals, bvecs, G,
+                               small_delta, big_delta)
+    # print(phi.shape)
+    # assert_equal(phi.shape, (372, 4))
+    error_one =  activeax_cost_one(phi, data[0, 0, 0])
+    return error_one
 
 import cvxpy as cvx
 
@@ -283,6 +291,10 @@ def final(data, x, fe):
     return res
 
 
+from scipy.optimize import differential_evolution
+
+res_one = differential_evolution(cost_one, bounds, args=(data, bvals, bvecs, G, small_delta, big_delta))
+
 fe = test_activax_exvivo_estimate()
 
 print(fe)
@@ -293,35 +305,3 @@ fe = np.squeeze(fe)
 res = final(data, x, fe)
 
 print(res)
-# test_activax_exvivo_model()
-
-"""
-[A1, A2, A3, A4] = Aax_exvivo_A(x1,g,Gamma,G_mag,del,Del,b,D_intra,D_iso);
-Aa=[A1 A2 A3 A4];
- cvx_begin quiet
-     variable f1e
-     variable f2e
-     variable f3e
-     variable f4e
-     fe=[f1e f2e f3e f4e]';
-         minimize(norm((ydata1)- (Aa*fe)-sigma));   % for offset gaussian
-        %  minimize(norm((ydata1)- (Aa*fe)))
-     0 <= f1e <= 1
-     0 <= f2e <= 1
-     0 <= f3e <= 1
-     0 <= f4e <= 1
-     f1e + f2e + f3e + f4e == 1
-     f1e <= x1(4)
-     cvx_end
-  x2=[f1e  f2e  f3e x1(1) x1(2) x1(3) f4e];
-%% Trust-region-reflective algorithm for non-linear data fitting
- opts = optimset('Display','off');
-  lb=[0.01 0.01  0.01 0.01 0.01 0.1 0.01];
-  ub=[0.9  0.9  0.9   pi pi 11  0.9];
-  [xf,resnorm,~,exitflag,output] = lsqcurvefit(@Aax_exvivo_eval,x2,xdata,ydata1,lb,ub,opts);
-f1_f=xf(1); f2_f= xf(2); f3_f=xf(3); f4_f=xf(7); theta_f=xf(4); phi_f=xf(5); R_f=xf(6);
-"""
-
-
-
-# test_activax_exvivo_model()
