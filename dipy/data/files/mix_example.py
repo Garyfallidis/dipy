@@ -205,10 +205,123 @@ def test_activax_exvivo_model():
     assert_almost_equal(error_one, 2.5070277363920468)
 
 
-test_activax_exvivo_model()
+import cvxpy as cvx
+
+
+def estimate_f(signal, phi):
+
+    # Create two scalar optimization variables.
+    f1e = cvx.Variable()
+    f2e = cvx.Variable()
+    f3e = cvx.Variable()
+    f4e = cvx.Variable()
+    fe = cvx.Variable(4)
+    # Create two constraints.
+    constraints = [cvx.sum_entries(fe) == 1,
+                   fe[0] >= 0,
+                   fe[1] >= 0,
+                   fe[2] >= 0,
+                   fe[3] >= 0]
+
+    # Form objective.
+    obj = cvx.Minimize(cvx.sum_entries(cvx.square(phi * fe - signal[:, None])))
+
+    # Form and solve problem.
+    prob = cvx.Problem(obj, constraints)
+    prob.solve()  # Returns the optimal value.
+    # print "status:", prob.status
+    # print "optimal value", prob.value
+    # print "optimal var", x.value, y.value
+
+    return np.array(fe.value)
+
+
+def test_activax_exvivo_estimate():
+    x = np.array([0.5, 0.5, 10, 0.8])
+    sigma = 0.05 # offset gaussian constant (not really needed)
+    phi = activax_exvivo_model(x, bvals, bvecs, G,
+                               small_delta, big_delta)
+    fe = estimate_f(np.array(data[0, 0, 0]), phi)
+
+    """
+    assert_array_equal()
+    [[ 0.04266318]
+     [ 0.58784575]
+     [ 0.21049456]
+     [ 0.15899651]]
+    """
+    return fe
+
+from scipy.optimize import leastsq
+
+# def ax_exvivo_eval():
+
+def estimate_x_and_f(x_fe, signal):
+
+    x = x_fe[:4]
+    fe = x_fe[4:]
+
+    phi = activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
+                               gamma=gamma,
+                               D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
+                               debug=False)
+
+   # return np.sum((np.dot(phi, fe) - signal[:, None]) ** 2)
+    return np.dot(phi, fe)
+
+def final(data, x, fe):
+
+    signal = np.array(data[0, 0, 0])
+
+    #fe = estimate_f(signal, phi)
+    #fe = np.squeeze(fe)
+    x_fe = np.zeros(8)
+    x_fe[:4] = x
+    x_fe[4:] = fe
+
+    res = leastsq(estimate_x_and_f, x_fe, args=(signal,))
+    return res
+
+
+fe = test_activax_exvivo_estimate()
+
+print(fe)
+print(np.sum(fe))
+
+x = np.array([0.5, 0.5, 10, 0.8])
+fe = np.squeeze(fe)
+res = final(data, x, fe)
+
+print(res)
+# test_activax_exvivo_model()
+
+"""
+[A1, A2, A3, A4] = Aax_exvivo_A(x1,g,Gamma,G_mag,del,Del,b,D_intra,D_iso);
+Aa=[A1 A2 A3 A4];
+ cvx_begin quiet
+     variable f1e
+     variable f2e
+     variable f3e
+     variable f4e
+     fe=[f1e f2e f3e f4e]';
+         minimize(norm((ydata1)- (Aa*fe)-sigma));   % for offset gaussian
+        %  minimize(norm((ydata1)- (Aa*fe)))
+     0 <= f1e <= 1
+     0 <= f2e <= 1
+     0 <= f3e <= 1
+     0 <= f4e <= 1
+     f1e + f2e + f3e + f4e == 1
+     f1e <= x1(4)
+     cvx_end
+  x2=[f1e  f2e  f3e x1(1) x1(2) x1(3) f4e];
+%% Trust-region-reflective algorithm for non-linear data fitting
+ opts = optimset('Display','off');
+  lb=[0.01 0.01  0.01 0.01 0.01 0.1 0.01];
+  ub=[0.9  0.9  0.9   pi pi 11  0.9];
+  [xf,resnorm,~,exitflag,output] = lsqcurvefit(@Aax_exvivo_eval,x2,xdata,ydata1,lb,ub,opts);
+f1_f=xf(1); f2_f= xf(2); f3_f=xf(3); f4_f=xf(7); theta_f=xf(4); phi_f=xf(5); R_f=xf(6);
+"""
 
 
 
-
-
-test_activax_exvivo_model()
+# test_activax_exvivo_model()
