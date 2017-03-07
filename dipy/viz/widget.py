@@ -109,7 +109,7 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
                                                       coord2[1] - size[1])
 
             window_size = ren.GetSize()
-            length = initial_window_size[0] * 0.04 / window_size[0]
+            length = initial_window_size[0] * 0.0005 / window_size[0]
             width = initial_window_size[1] * 0.04 / window_size[1]
 
             slider_rep.SetSliderLength(length)
