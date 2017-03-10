@@ -157,7 +157,7 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
             self.shape = (ex2 + 1, ey2 + 1, ez2 + 1)
 
         def display_extent(self, x1, x2, y1, y2, z1, z2):
-            self.SetDisplayExtent(x1, x2, y1, y2, z1, z2)
+            self.SetDisplayExtent(*list(map(int, [x1, x2, y1, y2, z1, z2])))
             if vtk.VTK_MAJOR_VERSION > 5:
                 self.Update()
 

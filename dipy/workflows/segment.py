@@ -267,11 +267,11 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
 
             sf_bundle_file = os.path.join(
                 out_dir,
-                base_mb + '_of_' + base_sf + '.trk')
+                base_mb + '_of_' + base_sf + '.tck')
 
             sf_bundle_file_initial = os.path.join(
                 out_dir,
-                base_mb + '_of_' + base_sf + '_initial.trk')
+                base_mb + '_of_' + base_sf + '_initial.tck')
 
             sf_bundle_labels = os.path.join(
                 out_dir,
@@ -281,9 +281,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             #     os.makedirs(os.path.dirname(sf_bundle_file))
 
             recognized_tractogram = nib.streamlines.Tractogram(
-                recognized_bundle)
-            recognized_trkfile = nib.streamlines.TrkFile(recognized_tractogram)
-            nib.streamlines.save(recognized_trkfile, sf_bundle_file)
+                recognized_bundle, affine_to_rasmm=np.eye(4))
+            nib.streamlines.save(recognized_tractogram, sf_bundle_file)
 
             np.save(sf_bundle_labels, np.array(rb.labels))
 
@@ -299,12 +298,11 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             if debug:
                 sf_bundle_neighb = os.path.join(
                     out_dir,
-                    base_mb + '_of_' + base_sf + '_neighb.trk')
+                    base_mb + '_of_' + base_sf + '_neighb.tck')
 
                 neighb_tractogram = nib.streamlines.Tractogram(
-                    rb.neighb_streamlines)
-                neighb_trkfile = nib.streamlines.TrkFile(neighb_tractogram)
-                nib.streamlines.save(neighb_trkfile, sf_bundle_neighb)
+                    rb.neighb_streamlines, affine_to_rasmm=np.eye(4))
+                nib.streamlines.save(neighb_tractogram, sf_bundle_neighb)
 
                 print('Recognized bundle\'s neighbors saved in \n {} '
                       .format(sf_bundle_neighb))
@@ -312,12 +310,11 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         if debug:
             sf_centroids = os.path.join(
                 os.path.dirname(sf),
-                base_sf + '_centroids.trk')
+                base_sf + '_centroids.tck')
 
             centroid_tractogram = nib.streamlines.Tractogram(
-                rb.centroids)
-            centroid_trkfile = nib.streamlines.TrkFile(centroid_tractogram)
-            nib.streamlines.save(centroid_trkfile, sf_centroids)
+                rb.centroids, affine_to_rasmm=np.eye(4))
+            nib.streamlines.save(centroid_tractogram, sf_centroids)
 
             print('Centroids of streamlines saved in \n {} '
                   .format(sf_centroids))
@@ -346,15 +343,12 @@ def assign_bundle_labels_flow(streamline_file, labels_files, verbose=True):
 
         labels = np.load(lf)
         recognized_bundle = streamlines[labels.tolist()]
-        recognized_tractogram = nib.streamlines.Tractogram(recognized_bundle)
-        recognized_trkfile = nib.streamlines.TrkFile(
-            recognized_tractogram,
-            header=streamlines_trk.header)
+        recognized_tractogram = nib.streamlines.Tractogram(recognized_bundle, affine_to_rasmm=np.eye(4))
         base = os.path.splitext(os.path.basename(lf))[0].split('_labels')[0]
         fname = os.path.join(
             os.path.dirname(lf),
             base + '_of_' + os.path.basename(streamline_file))
-        nib.streamlines.save(recognized_trkfile, fname)
+        nib.streamlines.save(recognized_tractogram, fname)
         if verbose:
             print('Bundle saved in \n {} '.format(fname))
 
@@ -431,9 +425,9 @@ def kdtrees_bundles_flow(streamline_file, labels_file,
 
     def button_save_callback(obj, event):
         global final_streamlines
-        ftypes = (("Trackvis file", "*.trk"), ("All Files", "*.*"))
-        fname = window.save_file_dialog(initial_file='dipy.trk',
-                                        default_ext='.trk',
+        ftypes = (("Trackvis file", "*.tck"), ("All Files", "*.*"))
+        fname = window.save_file_dialog(initial_file='dipy.tck',
+                                        default_ext='.tck',
                                         file_types=ftypes)
         if fname != '':
             print('Saving new trk file ...')
