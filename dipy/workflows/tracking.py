@@ -75,11 +75,11 @@ class DetTrackPAMFlow(GenericTrackFlow):
             A binary image showing where we need to seed for tracking.
         stopping_thr : float, optional
             Threshold applied to stopping volume's data to identify where
-            tracking has to stop. (default 0.25)
+            tracking has to stop. (default 0.2)
         seed_density : int, optional
             Number of seeds per dimension inside voxel (default 1).
         use_sh : bool, optional
-            Use spherical harmonics saved in peask to find the
+            Use spherical harmonics saved in peaks to find the
             maximum peak cone. (default False)
         out_dir : string, optional
            Output directory (default input file directory)
@@ -93,8 +93,10 @@ class DetTrackPAMFlow(GenericTrackFlow):
 
             logging.info('Deterministic tracking on {0}'
                          .format(pams_path))
+            
+            print('TO BE REMOVED')
 
-            pam = load_peaks(pams_path, verbose=False)
+            pam = load_peaks(pams_path, verbose=True)
 
             self._core_run(stopping_path, stopping_thr, seeding_path,
                            seed_density, use_sh, pam, out_tract)
