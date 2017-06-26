@@ -32,6 +32,7 @@ from dipy.tracking.streamline import Streamlines
 """
 Enables/disables interactive visualization
 """
+
 interactive = False
 
 """
@@ -124,9 +125,11 @@ else:
 
  **Direction Field (peaks)**
 
-``EuDX`` [Garyfallidis12]_ is a fast algorithm that we use here to generate
-streamlines. This algorithm is what is used here and the default option
-when providing the output of peaks directly in LocalTracking.
+``EuDX`` [Garyfallidis12]_ is a fast tracking algorithm that we use here to
+generate streamlines and supports propation towards multiple peaks per voxel.
+This algorithm is the default option when providing the output of peaks
+directly in LocalTracking. For other algorithms see
+:ref:`example_tracking_tissue_classifier`.
 """
 
 streamline_generator = LocalTracking(csd_peaks, tissue_classifier,
@@ -161,11 +164,11 @@ else:
 .. figure:: det_streamlines.png
  :align: center
 
- **Deterministic streamlines using EuDX (new framework)**
+ **Deterministic streamlines using the EuDX algorithm (new framework)**
 
 To learn more about this process you could start playing with the number of
-seed points or, even better, specify seeds to be in specific regions of interest
-in the brain.
+seed points or, even better, specify seeds to be in specific regions of
+interest in the brain.
 
 Save the resulting streamlines in a Trackvis (.trk) format and FA as
 Nifti1 (.nii.gz).
