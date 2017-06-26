@@ -123,7 +123,7 @@ else:
 .. figure:: csd_direction_field.png
  :align: center
 
- **Direction Field (peaks)**
+ **A slice of the field of directions (peaks)**
 
 ``EuDX`` [Garyfallidis12]_ is a fast tracking algorithm that we use here to
 generate streamlines and supports propation towards multiple peaks per voxel.
