@@ -261,7 +261,7 @@ show_m.initialize()
 
 """
 Finally, please set the following variable to True to interact with the 
-datasetsin 3D.
+datasetsin 3D..
 """
 
 interactive = False
