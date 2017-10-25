@@ -1,7 +1,8 @@
 ''' Metrics for tracks, where tracks are arrays of points '''
 from __future__ import division, print_function, absolute_import
 
-from ..utils.six.moves import xrange
+from dipy.utils.six.moves import xrange
+from dipy.testing import setup_test
 
 import numpy as np
 from scipy.interpolate import splprep, splev

@@ -6,7 +6,7 @@ Noise estimation using PIESNO
 Often, one is interested in estimating the noise in the diffusion signal. One
 of the methods to do this is the Probabilistic Identification and Estimation of
 Noise (PIESNO) framework [Koay2009]_. Using this method, one can detect the
-standard deviation of the noise from diffusion-weighted imaging (DWI). PIESNO
+standard deviation of the noise from Diffusion-Weighted Imaging (DWI). PIESNO
 also works with multiple channel DWI datasets that are acquired from N array
 coils for both SENSE and GRAPPA reconstructions.
 
@@ -18,10 +18,10 @@ in the fourth dimension of the DWI dataset. White matter, gray matter or CSF
 voxels have diffusion intensities that vary quite a lot across different
 directions.
 
-2) From these estimated background voxels and the input number of coils N,
-PIESNO finds what sigma each Gaussian from each of the N coils would have
-generated the observed Rician (N=1) or non-central Chi (N>1) distributed noise
-profile in the DWI datasets.
+2) From these estimated background voxels and the input number of coils $N$,
+PIESNO finds what sigma each Gaussian from each of the $N$ coils would have
+generated the observed Rician ($N = 1$) or non-central Chi ($N > 1$)
+distributed noise profile in the DWI datasets.
 
 PIESNO makes an important assumption: the Gaussian noise standard deviation is
 assumed to be uniform. The noise is uniform across multiple slice locations or
@@ -58,8 +58,8 @@ SENSE reconstruction, which has a Rician noise nature and thus N is always 1.
 
 sigma, mask = piesno(data, N=4, return_mask=True)
 
-axial = data[:, :, data.shape[2] / 2, 0].T
-axial_piesno = mask[:, :, data.shape[2] / 2].T
+axial = data[:, :, data.shape[2] // 2, 0].T
+axial_piesno = mask[:, :, data.shape[2] // 2].T
 
 import matplotlib.pyplot as plt
 fig, ax = plt.subplots(1, 2)
@@ -76,11 +76,11 @@ plt.savefig('piesno.png', bbox_inches='tight')
 .. figure:: piesno.png
    :align: center
 
-   **Showing the mid axial slice of the b=0 image (left) and estimated
-   background voxels (right) used to estimate the noise standard deviation**.
+   Showing the mid axial slice of the b=0 image (left) and estimated
+   background voxels (right) used to estimate the noise standard deviation.
 """
 
-nib.save(nib.Nifti1Image(mask, img.get_affine(), img.get_header()),
+nib.save(nib.Nifti1Image(mask, img.affine, img.header),
          'mask_piesno.nii.gz')
 
 print('The noise standard deviation is sigma= ', sigma)
@@ -96,10 +96,12 @@ example :ref:`example_snr_in_cc`) gives a value of 6.1.
 
 """
 
+References
+----------
+
 .. [Koay2009] Koay C.G., E. Ozarslan, C. Pierpaoli. Probabilistic
-              Identification and Estimation of Noise (PIESNO): A
-              self-consistent approach and its applications in MRI.
-              JMR, 199(1):94-103, 2009.
+   Identification and Estimation of Noise (PIESNO): A self-consistent approach
+   and its applications in MRI. JMR, 199(1):94-103, 2009.
 
 .. include:: ../links_names.inc
 

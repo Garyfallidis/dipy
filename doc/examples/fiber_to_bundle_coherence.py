@@ -6,22 +6,24 @@ Fiber to bundle coherence measures
 
 This demo presents the fiber to bundle coherence (FBC) quantitative
 measure of the alignment of each fiber with the surrounding fiber bundles
-[Meesters2016_HBM]_. These measures are useful in “cleaning” the results of
+[Meesters2016]_. These measures are useful in “cleaning” the results of
 tractography algorithms, since low FBCs indicate which fibers are isolated and
-poorly aligned with their neighbors, see Fig. 1.
+poorly aligned with their neighbors, as shown in the figure below.
+
+.. _fiber_to_bundle_coherence:
 
 .. figure:: _static/fbc_illustration.png
    :scale: 60 %
    :align: center
 
-   On the left this figure illustrates (in 2D) the contribution of two fiber 
-   points to the kernel density estimator. The kernel density estimator is the 
-   sum over all such locally aligned kernels. The local fiber to bundle 
-   coherence shown on the right color-coded for each fiber, is obtained by 
-   evaluating the kernel density estimator along the fibers. One spurious 
-   fiber is present which is isolated and badly aligned with the other fibers, 
-   and can be identified by a low LFBC value in the region where it deviates 
-   from the bundle. Figure adapted from [Portegies2015_PLoSOne]_.
+   On the left this figure illustrates (in 2D) the contribution of two fiber
+   points to the kernel density estimator. The kernel density estimator is the
+   sum over all such locally aligned kernels. The local fiber to bundle
+   coherence shown on the right color-coded for each fiber, is obtained by
+   evaluating the kernel density estimator along the fibers. One spurious
+   fiber is present which is isolated and badly aligned with the other fibers,
+   and can be identified by a low LFBC value in the region where it deviates
+   from the bundle. Figure adapted from [Portegies2015]_.
 
 Here we implement FBC measures based on kernel density estimation in the
 non-flat 5D position-orientation domain. First we compute the kernel density
@@ -30,15 +32,16 @@ and orientations) of the tractography. Then, the Local FBC (LFBC) is the
 result of evaluating the estimator along each element of the lifted fiber.
 A whole fiber measure, the relative FBC (RFBC), is calculated
 by the minimum of the moving average LFBC along the fiber.
-Details of the computation of FBC can be found in [Portegies2015_PLoSOne]_.
+Details of the computation of FBC can be found in [Portegies2015]_.
 
 """
 
 """
 The FBC measures are evaluated on the Stanford HARDI dataset
-(150 orientations, b=2000s/mm^2) which is one of the standard example datasets
-in DIPY.
+(150 orientations, b=2000 $s/mm^2$) which is one of the standard example
+datasets in dipy_.
 """
+
 import numpy as np
 from dipy.data import (read_stanford_labels, fetch_stanford_t1,
                        read_stanford_t1)
@@ -50,7 +53,7 @@ np.random.seed(1)
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
-affine = hardi_img.get_affine()
+affine = hardi_img.affine
 fetch_stanford_t1()
 t1 = read_stanford_t1()
 t1_data = t1.get_data()
@@ -163,9 +166,9 @@ for i in range(len(streamlines)):
 streamlines = list(sfil)
 
 """
-Inspired by [Paulo_Eurographics]_, a lookup-table is created, containing
-rotated versions of the fiber propagation kernel :math:`P_t`
-[DuitsAndFranken_IJCV]_ rotated over a discrete set of orientations. See the
+Inspired by [Rodrigues2010]_, a lookup-table is created, containing rotated
+versions of the fiber propagation kernel :math:`P_t` [DuitsAndFranken2011]_
+rotated over a discrete set of orientations. See the
 `Contextual enhancement example <http://nipy.org/dipy/examples_built/contextual_enhancement.html>`_
 for more details regarding the kernel. In order to ensure rotationally
 invariant processing, the discrete orientations are required to be equally
@@ -209,8 +212,9 @@ fbc_sl_thres, clrs_thres, rfbc_thres = \
 
 """
 The results of FBC measures are visualized, showing the original fibers
-colored by LFBC, and the fibers after the cleaning procedure via RFBC
-thresholding.
+colored by LFBC (see :ref:`optic_radiation_before_cleaning`), and the fibers
+after the cleaning procedure via RFBC thresholding (see
+:ref:`optic_radiation_after_cleaning`).
 """
 
 # Visualize the results
@@ -244,42 +248,49 @@ fvtk.add(ren, actor.line(fbc_sl_thres, clrs_thres, linewidth=0.2))
 fvtk.record(ren, n_frames=1, out_path='OR_after.png', size=(900, 900))
 
 """
+.. _optic_radiation_before_cleaning:
+
 .. figure:: OR_before.png
    :align: center
 
-   The optic radiation obtained through probabilistic tractography colored by 
+   The optic radiation obtained through probabilistic tractography colored by
    local fiber to bundle coherence.
+
+.. _optic_radiation_after_cleaning:
 
 .. figure:: OR_after.png
    :align: center
 
-   The tractography result is cleaned (shown in bottom) by removing fibers 
-   with a relative FBC (RFBC) lower than the threshold tau=0.2.
+   The tractography result is cleaned (shown in bottom) by removing fibers
+   with a relative FBC (RFBC) lower than the threshold :math:`\tau = 0.2`.
 
 Acknowledgments
-~~~~~~~~~~~~~~~
+---------------
 The techniques are developed in close collaboration with Pauly Ossenblok of
 the Academic Center of Epileptology Kempenhaeghe & Maastricht UMC+.
 
 References
-~~~~~~~~~~
+----------
 
-.. [Meesters2016_HBM] S. Meesters, G. Sanguinetti, E. Garyfallidis,
-                      J. Portegies, P. Ossenblok, R. Duits. (2016) Cleaning
-                      output of tractography via fiber to bundle coherence, a
-                      new open source implementation. Human Brain Mapping
-                      conference 2016.
-.. [Portegies2015_PLoSOne] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters,
-                           G.Girard, and R. Duits. (2015) Improving Fiber
-                           Alignment in HARDI by Combining Contextual PDE flow
-                           with Constrained Spherical Deconvolution. PLoS One.
-.. [DuitsAndFranken_IJCV] R. Duits and E. Franken (2011) Left-invariant
-                        diffusions on the space of positions and orientations
-                        and their application to crossing-preserving smoothing
-                        of HARDI images. International Journal of Computer
-                        Vision, 92:231-264.
-.. [Paulo_Eurographics] P. Rodrigues, R. Duits, B. Romeny, A. Vilanova (2010).
-                        Accelerated Diffusion Operators for Enhancing DW-MRI.
-                        Eurographics Workshop on Visual Computing for Biology
-                        and Medicine. The Eurographics Association.
+.. [Meesters2016] S. Meesters, G. Sanguinetti, E. Garyfallidis, J. Portegies,
+   P. Ossenblok, R. Duits. (2016) Cleaning output of tractography via fiber to
+   bundle coherence, a new open source implementation. Human Brain Mapping
+   Conference 2016.
+
+.. [Portegies2015] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters,
+   G.Girard, and R. Duits. (2015) Improving Fiber Alignment in HARDI by
+   Combining Contextual PDE flow with Constrained Spherical Deconvolution. PLoS
+   One.
+
+.. [DuitsAndFranken2011] R. Duits and E. Franken (2011) Left-invariant
+   diffusions on the space of positions and orientations and their application
+   to crossing-preserving smoothing of HARDI images. International Journal of
+   Computer Vision, 92:231-264.
+
+.. [Rodrigues2010] P. Rodrigues, R. Duits, B. Romeny, A. Vilanova (2010).
+   Accelerated Diffusion Operators for Enhancing DW-MRI. Eurographics Workshop
+   on Visual Computing for Biology and Medicine. The Eurographics Association.
+
+.. include:: ../links_names.inc
+
 """
