@@ -65,7 +65,6 @@ EXTS = []
 ext_kwargs = {'include_dirs': ['src']}  # We add np.get_include() later
 
 for modulename, other_sources, language in (
-<<<<<<< HEAD
     ('dipy.reconst.peak_direction_getter', [], 'c'),
     ('dipy.reconst.recspeed', [], 'c'),
     ('dipy.reconst.vec_val_sum', [], 'c'),
@@ -97,40 +96,6 @@ for modulename, other_sources, language in (
     ('dipy.align.transforms', [], 'c'),
     ('dipy.align.parzenhist', [], 'c')):
 
-=======
-        ('dipy.reconst.peak_direction_getter', [], 'c'),
-        ('dipy.reconst.recspeed', [], 'c'),
-        ('dipy.reconst.vec_val_sum', [], 'c'),
-        ('dipy.reconst.quick_squash', [], 'c'),
-        ('dipy.tracking.distances', [], 'c'),
-        ('dipy.tracking.streamlinespeed', [], 'c'),
-        ('dipy.tracking.local.localtrack', [], 'c'),
-        ('dipy.tracking.local.direction_getter', [], 'c'),
-        ('dipy.tracking.local.tissue_classifier', [], 'c'),
-        ('dipy.tracking.local.interpolation', [], 'c'),
-        ('dipy.tracking.vox2track', [], 'c'),
-        ('dipy.tracking.propspeed', [], 'c'),
-        ('dipy.tracking.fbcmeasures', [], 'c'),
-        ('dipy.segment.cythonutils', [], 'c'),
-        ('dipy.segment.featurespeed', [], 'c'),
-        ('dipy.segment.metricspeed', [], 'c'),
-        ('dipy.segment.clusteringspeed', [], 'c'),
-        ('dipy.segment.clustering_algorithms', [], 'c'),
-        ('dipy.segment.mrf', [], 'c'),
-        ('dipy.denoise.denspeed', [], 'c'),
-        ('dipy.denoise.pca_noise_estimate', [], 'c'),
-        ('dipy.denoise.nlmeans_block', [], 'c'),
-        ('dipy.denoise.enhancement_kernel', [], 'c'),
-        ('dipy.denoise.shift_twist_convolution', [], 'c'),
-        ('dipy.align.vector_fields', [], 'c'),
-        ('dipy.align.sumsqdiff', [], 'c'),
-        ('dipy.align.expectmax', [], 'c'),
-        ('dipy.align.crosscorr', [], 'c'),
-        ('dipy.align.bundlemin', [], 'c'),
-        ('dipy.align.transforms', [], 'c'),
-        ('dipy.align.parzenhist', [], 'c'),
-        ('dipy.utils.omp', [], 'c')):
->>>>>>> master
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
                           language=language,
