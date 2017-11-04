@@ -47,24 +47,10 @@ data = FA
 renderer = window.Renderer()
 renderer.background((0.5, 0.5, 0.5))
 
-
-
-"""
-Now we would like to add the ability to click on a voxel and show its value
-on a panel in the window. The panel is a UI element which requires access to
-different areas of the visualization pipeline and therefore we don't recommend
-using it with ``window.show``. The more appropriate way is to use the
-``ShowManager`` object, which allows accessing the pipeline in different areas.
-"""
-
 slice_actor = actor.slicer(data)
 
 show_m = window.ShowManager(renderer, size=(1200, 900))
 show_m.initialize()
-
-"""
-We'll start by creating the panel and adding it to the ``ShowManager``
-"""
 
 label_position = ui.TextBlock2D(text='Position:')
 label_value = ui.TextBlock2D(text='Value:')
@@ -91,36 +77,6 @@ Add a left-click callback to the slicer. Also disable interpolation so you can
 see what you are picking.
 """
 
-
-def left_click_callback(obj, ev):
-    """Get the value of the clicked voxel and show it in the panel."""
-    event_pos = show_m.iren.GetEventPosition()
-
-    obj.picker.Pick(event_pos[0],
-                    event_pos[1],
-                    0,
-                    show_m.ren)
-
-    i, j, k = obj.picker.GetPointIJK()
-    result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
-    result_value.message = '%.8f' % data[i, j, k]
-
-slice_actor.SetInterpolate(False)
-slice_actor.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
-
-# show_m.start()
-
-"""
-Create a mosaic
-================
-
-By using the ``copy`` and ``display`` method of the ``slice_actor`` becomes
-easy and efficient to create a mosaic of all the slices.
-
-So, let's clear the renderer and change the projection from perspective to
-parallel. We'll also need a new show manager and an associated callback.
-"""
-
 renderer.clear()
 renderer.projection('parallel')
 
@@ -144,11 +100,6 @@ def left_click_callback_mosaic(obj, ev):
     result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
     result_value.message = '%.8f' % data[i, j, k]
 
-"""
-Now we need to create two nested for loops which will set the positions of
-the grid of the mosaic and add the new actors to the renderer. We are going
-to use 15 columns and 10 rows but you can adjust those with your datasets.
-"""
 
 cnt = 0
 
@@ -182,18 +133,3 @@ renderer.zoom(1.6)
 show_m_mosaic.ren.add(panel_picking)
 show_m_mosaic.start()
 
-"""
-If you uncomment the two lines above, you will be able to move
-the mosaic up/down and left/right using the middle mouse button drag,
-zoom in/out using the scroll wheel, and pick voxels with left click.
-"""
-
-#window.record(renderer, out_path='mosaic.png', size=(900, 600),
-#              reset_camera=False)
-
-"""
-.. figure:: mosaic.png
-   :align: center
-
-   A mosaic of all the slices in the T1 volume.
-"""
