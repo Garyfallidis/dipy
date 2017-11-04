@@ -26,7 +26,9 @@ bvecs[np.isnan(bvecs)] = 0
 gtab = gradient_table(bvals, bvecs)
 
 
-vol = np.load('vol.npy')
+# vol = np.load('vol.npy')
+vol = np.load('vol_reg_cross.npy')
+
 
 affine = np.eye(4)
 
@@ -103,8 +105,8 @@ def left_click_callback(obj, ev):
     result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
     result_value.message = '%.8f' % data[i, j, k]
 
-fa_actor.SetInterpolate(False)
-fa_actor.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
+slice_actor.SetInterpolate(False)
+slice_actor.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
 
 # show_m.start()
 
