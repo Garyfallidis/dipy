@@ -39,6 +39,22 @@ def f2(t):
     z = np.zeros(x.shape)
     return x, y, z
 
+def f1(t):
+    x = np.linspace(-1, 1, len(t))
+    y = np.zeros(x.shape)
+    z = np.zeros(x.shape)
+    return x, y, z
+
+
+def f2(t):
+    
+    y = np.linspace(-1, 1, len(t))
+    x = np.zeros(y.shape)
+    z = np.zeros(x.shape)
+    return x, y, z
+
+
+
 class Node(object):
     def __init__(self, position, value=0):
         self.position = position
@@ -374,8 +390,11 @@ def return_streamline(seed,dirs,track_point,graph,value,with_stand=-3):
 
 
 if __name__ == "__main__":
+    
+    #build_phantom('vol_reg_cross.npy')
 
-    vol = np.load('vol.npy')
+    
+    vol = np.load('vol_reg_cross.npy') #'vol.npy')
     tensor_model = TensorModel(gtab)
     tensor_fit = tensor_model.fit(vol)
     FA = tensor_fit.fa
@@ -405,6 +424,8 @@ if __name__ == "__main__":
     non_zero = np.where(FA !=0 )
     n = np.array(non_zero)
     n = np.transpose(n)
+
+    1/0
 
     seed = n[1]
     dim1 = np.linspace(n[1][0]-1,n[1][0]+1)
