@@ -485,10 +485,15 @@ def brain_extraction(input_data, input_affine, template_data,
         starting_affine=starting_affine)
 
     # Now perform the Non-linear Registration
-
+    print("hi there")
     pre_align = translation.affine
-
-    metric = CCMetric(3)
+    if same_modality:
+        metric = CCMetric(3)
+        
+    else:
+        metric = EMMetric(3)
+        
+        
     level_iters = [10, 10, 5]
     sdr = SymmetricDiffeomorphicRegistration(
         metric, level_iters, ss_sigma_factor=1.7)
