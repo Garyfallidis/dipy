@@ -455,8 +455,13 @@ def brain_extraction(input_data, input_affine, template_data,
 
     """
 
-    c_of_mass = transform_centers_of_mass(input_data, input_affine,
-                                          template_data, template_affine)
+    static = input_data
+    static_grid2world = input_affine
+    moving = template_data
+    moving_grid2world = template_affine
+
+    c_of_mass = transform_centers_of_mass(static, static_grid2world,
+                                          moving, template_affine)
 
     # register the template data to input using affine registeration
 
@@ -484,46 +489,62 @@ def brain_extraction(input_data, input_affine, template_data,
         template_affine,
         starting_affine=starting_affine)
 
+    transform = RigidTransform3D()
+    params0 = None
+    starting_affine = translation.affine
+    rigid = affreg.optimize(static, moving, transform, params0,
+                            static_grid2world, moving_grid2world,
+                            starting_affine=starting_affine)
+
+
+    transform = AffineTransform3D()
+    params0 = None
+    starting_affine = rigid.affine
+    affine = affreg.optimize(static, moving, transform, params0,
+                             static_grid2world, moving_grid2world,
+                             starting_affine=starting_affine)
+
+    trans_template = affine.transform(moving)
+    trans_mask = affine.transform(template_mask)
+
+    return trans_template, trans_mask
+
     # Now perform the Non-linear Registration
-    print("hi there")
+
     pre_align = translation.affine
     if same_modality:
         metric = CCMetric(3)
-        
+
     else:
         metric = EMMetric(3)
-        
-        
+
     level_iters = [10, 10, 5]
     sdr = SymmetricDiffeomorphicRegistration(
-        metric, level_iters, ss_sigma_factor=1.7)
-    mapping = sdr.optimize(
-        input_data,
-        template_data,
-        input_affine,
-        template_affine,
-        pre_align)\
+        metric,
+        level_iters,
+        ss_sigma_factor=1.7)
 
-    transformed_data = mapping.transform(template_data)
-    transformed_mask = mapping.transform(template_mask)
+    mapping = sdr.optimize(input_data, template_data, input_affine,
+                           template_affine, pre_align)
+
+    trans_template = mapping.transform(template_data)
+    trans_mask = mapping.transform(template_mask)
 
     if same_modality:
-        [output_data, output_mask] = fast_patch_averaging(input_data.astype(np.float64),
-                                                          transformed_data.astype(
-                                                              np.float64),
-                                                          transformed_mask.astype(
-                                                              np.float64),
-                                                          patch_radius,
-                                                          block_radius,
-                                                          parameter,
-                                                          threshold)
+        [output_data, output_mask] = fast_patch_averaging(
+                input_data.astype(np.float64),
+                trans_template.astype(np.float64),
+                trans_mask.astype(np.float64),
+                patch_radius,
+                block_radius,
+                parameter,
+                threshold)
     else:
-        [output_data, output_mask] = template_only_averaging(input_data.astype(np.float64),
-                                                             transformed_data.astype(
-                                                                 np.float64),
-                                                             transformed_mask.astype(
-                                                                 np.float64),
-                                                             patch_radius,
-                                                             threshold)
+        [output_data, output_mask] = template_only_averaging(
+                input_data.astype(np.float64),
+                trans_template.astype(np.float64),
+                trans_mask.astype(np.float64),
+                patch_radius,
+                threshold)
 
-    return [output_data, output_mask]
+    return output_data, output_mask, trans_template, trans_mask
