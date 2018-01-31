@@ -496,7 +496,6 @@ def brain_extraction(input_data, input_affine, template_data,
                             static_grid2world, moving_grid2world,
                             starting_affine=starting_affine)
 
-
     transform = AffineTransform3D()
     params0 = None
     starting_affine = rigid.affine
