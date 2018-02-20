@@ -3,10 +3,16 @@
 
 import itertools
 import numpy as np
+cimport numpy as cnp
+from libc.stdlib cimport malloc, calloc, realloc, free
+from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 
+#cdef extern from "numpy/arrayobject.h":
+#    void PyArray_ENABLEFLAGS(cnp.ndarray arr, int flags)
+    
 from cythonutils cimport Data2D, shape2tuple
 from metricspeed cimport Metric
-from clusteringspeed cimport ClustersCentroid, Centroid, QuickBundles
+from clusteringspeed cimport ClustersCentroid, Centroid, QuickBundles, Centroid2
 from dipy.segment.clustering import ClusterMapCentroid, ClusterCentroid
 
 DTYPE = np.float32
@@ -106,3 +112,25 @@ def quickbundles(streamlines, Metric metric, double threshold, long max_nb_clust
         qb.update_step(cluster_id)
 
     return clusters_centroid2clustermap_centroid(qb.clusters)
+
+
+
+def memview_to_pointer(float [:, ::1] mv):
+    cdef Centroid2 c
+    c.features = <float *> &mv[0, 0]
+    print(c.features[0])
+
+    
+def pointer_to_memview(size_t N, size_t M):
+
+    cdef Centroid2 c
+    c.features = <float *>PyMem_Malloc(N * M * sizeof(float))  
+    cdef float[:, ::1] mv = <float[:N, :M]> c.features
+    
+    return mv
+    
+def free_memview(float [:, ::1] mv):
+    if mv._data is not NULL:
+        PyMem_Free(mv._data)    
+    
+

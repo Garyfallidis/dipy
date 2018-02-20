@@ -7,6 +7,10 @@ cdef struct Centroid:
     int size
 
 
+cdef struct Centroid2:
+    float * features
+    int size
+
 cdef struct NearestCluster:
     int id
     double dist
