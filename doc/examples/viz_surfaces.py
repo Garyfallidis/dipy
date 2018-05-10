@@ -160,6 +160,7 @@ renderer.set_camera(position=(10, 5, 7), focal_point=(0.5, 0.5, 0.5))
 
 camera = renderer.get_camera()
 
+#uniform
 @vtk.calldata_type(vtk.VTK_OBJECT)
 def vtkShaderCallback(caller, event, calldata=None):
     camera = renderer.GetActiveCamera()
@@ -183,6 +184,11 @@ def vtkShaderCallback(caller, event, calldata=None):
         program.SetUniform3f("cameraPos", cameraPos)
         program.SetUniformMatrix("projMat", projMat)
         program.SetUniformMatrix("viewMat", viewMat)
+
+#for attributes that change per vertex see
+# https://github.com/dmreagan/dipy/blob/halo-line/dipy/viz/utils.py#L458
+# MapDataArrayToVertexAttribute
+# https://github.com/dmreagan/dipy/blob/halo-line/dipy/viz/actor.py#L668
 
 gl_mapper.AddObserver(vtk.vtkCommand.UpdateShaderEvent,
                       vtkShaderCallback)
