@@ -131,7 +131,7 @@ gl_mapper.AddShaderReplacement(
     "//VTK::Light::Impl",
     True,
     "//VTK::Light::Impl\n"
-    "fragOutput0 = vec4(1, 0, 0, lineWidthPercentageBlack);\n abcd",
+    "fragOutput0 = vec4(1, 0, 0, lineWidthPercentageBlack);\n",
     False)
 
 

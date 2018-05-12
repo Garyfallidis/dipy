@@ -54,8 +54,8 @@ else:
     vtkRenderer = object
 
 if have_imread:
-    from scipy.misc import imread
-
+    # from scipy.misc import imread
+    from imageio import imread
 
 class Renderer(vtkRenderer):
     """ Your scene class
