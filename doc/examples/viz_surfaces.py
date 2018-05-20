@@ -99,15 +99,45 @@ Visualize surfaces
 # get vtkActor
 cube_actor = ut_vtk.get_actor_from_polydata(cube_polydata)
 
+cube_actor2 = ut_vtk.get_actor_from_polydata(cube_polydata)
+cube_actor2.SetPosition(5, 0, 0)
+
 # renderer and scene
 renderer = window.Renderer()
 renderer.add(cube_actor)
+renderer.add(cube_actor2)
+
 renderer.set_camera(position=(10, 5, 7), focal_point=(0.5, 0.5, 0.5))
 renderer.zoom(3)
 
 # display
 # window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='cube.png', size=(600, 600))
+# window.record(renderer, out_path='cube.png', size=(600, 600))
+
+transparent = False
+
+def left_click_callback(obj, event):
+    global transparent
+    print(obj)
+    print(event)
+
+    if transparent:
+        obj.GetProperty().SetOpacity(0.6)
+    else:
+        obj.GetProperty().SetOpacity(1)
+
+    transparent = not transparent
+
+cube_actor.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
+
+cube_actor2.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
+
+
+showm = window.ShowManager(renderer, interactor_style='custom')
+
+showm.initialize()
+showm.render()
+showm.start()
 
 """
 .. figure:: cube.png
