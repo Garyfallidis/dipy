@@ -11,7 +11,7 @@ from dipy.viz.utils import get_polydata_lines
 
 def check_range(streamline, lt, gt):
     length_s = length(streamline)
-    if (length_s < gt) & (length_s > lt):
+    if (length_s < lt) & (length_s > gt):
         return True
     else:
         return False
@@ -220,7 +220,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             print(' Construct cluster actors')
             for (i, c) in enumerate(centroids):
                 if check_range(c, length_lt, length_gt):
-                    if sizes[i] > clusters_lt and sizes[i] < clusters_gt:
+                    if sizes[i] > clusters_gt and sizes[i] < clusters_lt:
                         act = actor.streamtube([c], colors,
                                                linewidth=linewidths[i],
                                                lod=False)
@@ -377,8 +377,8 @@ class HorizonFlow(Workflow):
 
     def run(self, input_files, cluster=False, cluster_thr=15.,
             random_colors=False,
-            length_lt=0, length_gt=1000,
-            clusters_lt=0, clusters_gt=10**8):
+            length_lt=1000, length_gt=0,
+            clusters_lt=10**8, clusters_gt=0):
         """ Advanced visualization utility
 
         Parameters
