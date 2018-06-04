@@ -162,6 +162,43 @@ def slicer_panel(renderer, data, affine, world_coords):
     return panel
 
 
+def apply_shader(actor, opacity_level):
+
+    gl_mapper = actor.GetMapper()
+
+    gl_mapper.AddShaderReplacement(
+        vtk.vtkShader.Vertex,
+        "//VTK::ValuePass::Impl",  # replace the normal block
+        False,
+        "//VTK::ValuePass::Impl\n",  # we still want the default
+        False)
+
+    gl_mapper.AddShaderReplacement(
+        vtk.vtkShader.Fragment,
+        "//VTK::Light::Impl",
+        True,
+        "//VTK::Light::Impl\n"
+        "fragOutput0 = fragOutput0 - vec4(0.2, 0, 0, opacity_level);\n",
+        False)
+
+    gl_mapper.AddShaderReplacement(
+        vtk.vtkShader.Fragment,
+        "//VTK::Coincident::Dec",
+        True,
+        "//VTK::Coincident::Dec\n"
+        "uniform float opacity_level;\n",
+        False)
+
+    @window.vtk.calldata_type(window.vtk.VTK_OBJECT)
+    def vtk_shader_callback(caller, event, calldata=None):
+        program = calldata
+        if program is not None:
+
+            program.SetUniformf("opacity_level", opacity_level)
+
+    gl_mapper.AddObserver(window.vtk.vtkCommand.UpdateShaderEvent,
+                          vtk_shader_callback)
+
 def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             length_lt, length_gt, clusters_lt, clusters_gt):
 
@@ -233,6 +270,8 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         bundle.GetProperty().SetLineWidth(6)
                         bundle.GetProperty().SetOpacity(1)
                         bundle.VisibilityOff()
+                        apply_shader(bundle, 0.5)
+
                         ren.add(bundle)
 
                         # Every centroid actor is paired to a cluster actor
