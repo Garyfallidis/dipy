@@ -162,6 +162,46 @@ def slicer_panel(renderer, data, affine, world_coords):
     return panel
 
 
+def apply_shader(actor):
+    global opacity_level
+
+    gl_mapper = actor.GetMapper()
+
+    gl_mapper.AddShaderReplacement(
+        vtk.vtkShader.Vertex,
+        "//VTK::ValuePass::Impl",  # replace the normal block
+        False,
+        "//VTK::ValuePass::Impl\n",  # we still want the default
+        False)
+
+    gl_mapper.AddShaderReplacement(
+        vtk.vtkShader.Fragment,
+        "//VTK::Light::Impl",
+        True,
+        "//VTK::Light::Impl\n"
+        "fragOutput0 = fragOutput0 - vec4(0.2, 0, 0, opacity_level);\n",
+        False)
+
+    gl_mapper.AddShaderReplacement(
+        vtk.vtkShader.Fragment,
+        "//VTK::Coincident::Dec",
+        True,
+        "//VTK::Coincident::Dec\n"
+        "uniform float opacity_level;\n",
+        False)
+
+    @window.vtk.calldata_type(window.vtk.VTK_OBJECT)
+    def vtk_shader_callback(caller, event, calldata=None):
+        global opacity_level
+        program = calldata
+        if program is not None:
+
+            program.SetUniformf("opacity_level", opacity_level)
+
+    gl_mapper.AddObserver(window.vtk.vtkCommand.UpdateShaderEvent,
+                          vtk_shader_callback)
+
+
 def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             length_lt, length_gt, clusters_lt, clusters_gt):
 
@@ -178,6 +218,8 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     global tractogram_clusters, text_block
     tractogram_clusters = {}
 
+    global opacity_level
+    opacity_level = 0
     # cluster_actor_access = {}
 
     ren = window.Renderer()
@@ -233,13 +275,16 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         bundle.GetProperty().SetLineWidth(6)
                         bundle.GetProperty().SetOpacity(1)
                         bundle.VisibilityOff()
+                        apply_shader(bundle)
+
                         ren.add(bundle)
 
                         # Every centroid actor is paired to a cluster actor
                         centroid_actors[act] = {
                             'pair': bundle, 'cluster': i, 'tractogram': t}
                         cluster_actors[bundle] = {
-                            'pair': act, 'cluster': i, 'tractogram': t}
+                            'pair': act, 'cluster': i, 'tractogram': t,
+                            'size': sizes[i]}
 
         else:
             streamline_actor = actor.line(streamlines, colors=colors)
@@ -249,8 +294,33 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             streamline_actor.GetProperty().SetOpacity(1)
             ren.add(streamline_actor)
 
-    show_m = window.ShowManager(ren, size=(1200, 900))
+    show_m = window.ShowManager(ren, size=(1200, 900), order_transparent=True)
     show_m.initialize()
+
+    if cluster:
+        line_slider = ui.LineSlider2D(min_value=0,
+                                      max_value=100,
+                                      initial_value=1,
+                                      text_template="{value:.0f}",
+                                      length=140)
+
+        def hide_clusters(i_ren, obj, slider):
+            global show_m
+            sz = np.round(slider.value)
+            cluster_actors
+            for k in cluster_actors:
+                if cluster_actors[k]['size'] < sz:
+                    k.SetVisibility(0)
+            show_m.render()
+
+        line_slider.add_callback(line_slider.slider_disk,
+                                 "MouseMoveEvent",
+                                 hide_clusters)
+        line_slider.add_callback(line_slider.slider_line,
+                                 "LeftButtonPressEvent",
+                                 hide_clusters)
+
+        ren.add(line_slider)
 
     if len(images) > 0:
 
@@ -316,6 +386,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     centroid_visibility = True
 
     def key_press(obj, event):
+        global opacity_level
         print('Inside key_press')
         global centroid_visibility, select_all, tractogram_clusters
         key = obj.GetKeySym()
@@ -341,6 +412,13 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         cluster_actors[bundle]['pair'].VisibilityOn()
 
                 select_all = not select_all
+                show_m.render()
+
+            if key == 'o' or key == 'O':
+                opacity_level += 0.1
+                if opacity_level > 1:
+                    opacity_level = 0
+
                 show_m.render()
 
             if key == 's' or key == 'S':
