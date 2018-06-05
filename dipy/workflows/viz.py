@@ -19,7 +19,6 @@ def check_range(streamline, lt, gt):
 
 def slicer_panel(renderer, data, affine, world_coords):
 
-    #renderer = showm.ren
     shape = data.shape
     if not world_coords:
         image_actor_z = actor.slicer(data, affine=np.eye(4))
@@ -157,13 +156,13 @@ def slicer_panel(renderer, data, affine, world_coords):
     panel.add_element(opacity_slider_label, 'relative', (0.1, 0.15))
     panel.add_element(opacity_slider, 'relative', (0.65, 0.2))
 
-    #showm.ren.add(panel)
     renderer.add(panel)
     return panel
 
 
+
 def apply_shader(actor):
-    global opacity_level
+    global opacity_level, cluster_actors
 
     gl_mapper = actor.GetMapper()
 
@@ -179,7 +178,9 @@ def apply_shader(actor):
         "//VTK::Light::Impl",
         True,
         "//VTK::Light::Impl\n"
-        "fragOutput0 = fragOutput0 - vec4(0.2, 0, 0, opacity_level);\n",
+        "if (selected == 1){\n"
+        " fragOutput0 = fragOutput0 + vec4(0.2, 0.2, 0, opacity_level);\n"
+        "}\n",
         False)
 
     gl_mapper.AddShaderReplacement(
@@ -187,16 +188,29 @@ def apply_shader(actor):
         "//VTK::Coincident::Dec",
         True,
         "//VTK::Coincident::Dec\n"
+        "uniform float selected;\n"
         "uniform float opacity_level;\n",
         False)
 
     @window.vtk.calldata_type(window.vtk.VTK_OBJECT)
     def vtk_shader_callback(caller, event, calldata=None):
-        global opacity_level
+        global opacity_level, cluster_actors
         program = calldata
         if program is not None:
+            # print('test')
+            # print(actor)
+            try:
+                program.SetUniformf("selected",
+                                    centroid_actors[actor]['selected'])
+            except KeyError:
+                pass
 
-            program.SetUniformf("opacity_level", opacity_level)
+            try:
+                program.SetUniformf("selected",
+                                    cluster_actors[actor]['selected'])
+            except KeyError:
+                pass
+            program.SetUniformf("opacity_level", 1)
 
     gl_mapper.AddObserver(window.vtk.vtkCommand.UpdateShaderEvent,
                           vtk_shader_callback)
@@ -210,7 +224,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     global select_all
     select_all = False
 
-    prng = np.random.RandomState(27) # 1838
+    prng = np.random.RandomState(27)  # 1838
     global centroid_actors, cluster_actors, visible_centroids, visible_clusters
     global cluster_access
     centroid_actors = {}
@@ -252,6 +266,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             sizes = np.array([len(c) for c in clusters])
             linewidths = np.interp(sizes,
                                    [sizes.min(), sizes.max()], [0.1, 2.])
+            centroid_lengths = np.array([length(c) for c in centroids])
 
             print(' Minimum number of streamlines in cluster {}'
                   .format(sizes.min()))
@@ -261,30 +276,35 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
             print(' Construct cluster actors')
             for (i, c) in enumerate(centroids):
-                if check_range(c, length_lt, length_gt):
-                    if sizes[i] > clusters_gt and sizes[i] < clusters_lt:
-                        act = actor.streamtube([c], colors,
-                                               linewidth=linewidths[i],
-                                               lod=False)
+                # if check_range(c, length_lt, length_gt):
+                    # if sizes[i] > clusters_gt and sizes[i] < clusters_lt:
+                centroid_actor = actor.streamtube([c], colors,
+                                                  linewidth=linewidths[i],
+                                                  lod=False)
+                ren.add(centroid_actor)
 
-                        ren.add(act)
+                cluster_actor = actor.line(clusters[i],
+                                           lod=False)
+                cluster_actor.GetProperty().SetRenderLinesAsTubes(1)
+                cluster_actor.GetProperty().SetLineWidth(6)
+                cluster_actor.GetProperty().SetOpacity(1)
+                cluster_actor.VisibilityOff()
 
-                        bundle = actor.line(clusters[i],
-                                            lod=False)
-                        bundle.GetProperty().SetRenderLinesAsTubes(1)
-                        bundle.GetProperty().SetLineWidth(6)
-                        bundle.GetProperty().SetOpacity(1)
-                        bundle.VisibilityOff()
-                        apply_shader(bundle)
+                ren.add(cluster_actor)
 
-                        ren.add(bundle)
+                # Every centroid actor is paired to a cluster actor
+                centroid_actors[centroid_actor] = {
+                    'cluster_actor': cluster_actor,
+                    'cluster': i, 'tractogram': t, 'selected': 0}
 
-                        # Every centroid actor is paired to a cluster actor
-                        centroid_actors[act] = {
-                            'pair': bundle, 'cluster': i, 'tractogram': t}
-                        cluster_actors[bundle] = {
-                            'pair': act, 'cluster': i, 'tractogram': t,
-                            'size': sizes[i]}
+                cluster_actors[cluster_actor] = {
+                    'centroid_actor': centroid_actor,
+                    'cluster': i, 'tractogram': t,
+                    'size': sizes[i], 'length': centroid_lengths[i],
+                    'selected': 0}
+                apply_shader(cluster_actor)
+                apply_shader(centroid_actor)
+
 
         else:
             streamline_actor = actor.line(streamlines, colors=colors)
@@ -349,13 +369,13 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     global picked_actors
     picked_actors = {}
 
-    def pick_callback(obj, event):
+    def left_click_cluster_callback(obj, event):
 
+        """
         try:
             paired_obj = cluster_actors[obj]['pair']
             obj.SetVisibility(not obj.GetVisibility())
             paired_obj.SetVisibility(not paired_obj.GetVisibility())
-
 
         except KeyError:
             pass
@@ -367,15 +387,31 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
         except KeyError:
             pass
+        """
+        print('cluster')
+        pass
+
+    def left_click_centroid_callback(obj, event):
+        global cluster_actors
+        print('centroid')
+
+        centroid_actors[obj]['selected'] = not centroid_actors[obj]['selected']
+        show_m.render()
 
 
+    """
     for act in centroid_actors:
 
         act.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
 
+    """
+
     for cl in cluster_actors:
 
-        cl.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
+        cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
+                       1.0)
+        cluster_actors[cl]['centroid_actor'].AddObserver(
+            'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
 
 
     # for prop in picked_actors.values():
@@ -392,6 +428,8 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         key = obj.GetKeySym()
         if cluster:
             if key == 'c' or key == 'C':
+
+                """
                 if centroid_visibility:
                     for ca in centroid_actors:
                         ca.VisibilityOff()
@@ -400,8 +438,11 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                     for ca in centroid_actors:
                         ca.VisibilityOn()
                     centroid_visibility = True
+                """
                 show_m.render()
+
             if key == 'a' or key == 'A':
+                """
                 if select_all:
                     for bundle in cluster_actors.keys():
                         bundle.VisibilityOn()
@@ -412,13 +453,25 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         cluster_actors[bundle]['pair'].VisibilityOn()
 
                 select_all = not select_all
+                """
+                show_m.render()
+
+            if key == 'e' or key == 'E':
+
+                for c in centroid_actors:
+                    if centroid_actors[c]['selected']:
+                        centroid_actors[c]['cluster_actor'].VisibilityOn()
+                        c.VisibilityOff()
+
                 show_m.render()
 
             if key == 'o' or key == 'O':
+
+                """
                 opacity_level += 0.1
                 if opacity_level > 1:
                     opacity_level = 0
-
+                """
                 show_m.render()
 
             if key == 's' or key == 'S':
