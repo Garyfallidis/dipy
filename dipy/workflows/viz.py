@@ -258,6 +258,9 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         data, affine = images[0]
         panel = slicer_panel(ren, data, affine, world_coords)
         # show_m.ren.add(panel)
+    else:
+        data = None
+        affine = None
 
     global size
     size = ren.GetSize()
@@ -282,6 +285,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             paired_obj = cluster_actors[obj]['pair']
             obj.SetVisibility(not obj.GetVisibility())
             paired_obj.SetVisibility(not paired_obj.GetVisibility())
+
 
         except KeyError:
             pass
@@ -317,7 +321,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         key = obj.GetKeySym()
         if cluster:
             if key == 'c' or key == 'C':
-                if centroid_visibility is True:
+                if centroid_visibility:
                     for ca in centroid_actors:
                         ca.VisibilityOff()
                     centroid_visibility = False
