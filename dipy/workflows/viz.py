@@ -160,9 +160,8 @@ def slicer_panel(renderer, data, affine, world_coords):
     return panel
 
 
-
 def apply_shader(actor):
-    global opacity_level, cluster_actors
+    global opacity_level
 
     gl_mapper = actor.GetMapper()
 
@@ -197,14 +196,11 @@ def apply_shader(actor):
         global opacity_level, cluster_actors
         program = calldata
         if program is not None:
-            # print('test')
-            # print(actor)
             try:
                 program.SetUniformf("selected",
                                     centroid_actors[actor]['selected'])
             except KeyError:
                 pass
-
             try:
                 program.SetUniformf("selected",
                                     cluster_actors[actor]['selected'])
@@ -369,50 +365,31 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     global picked_actors
     picked_actors = {}
 
-    def left_click_cluster_callback(obj, event):
-
-        """
-        try:
-            paired_obj = cluster_actors[obj]['pair']
-            obj.SetVisibility(not obj.GetVisibility())
-            paired_obj.SetVisibility(not paired_obj.GetVisibility())
-
-        except KeyError:
-            pass
-
-        try:
-            paired_obj = centroid_actors[obj]['pair']
-            obj.SetVisibility(not obj.GetVisibility())
-            paired_obj.SetVisibility(not paired_obj.GetVisibility())
-
-        except KeyError:
-            pass
-        """
-        print('cluster')
-        pass
-
     def left_click_centroid_callback(obj, event):
-        global cluster_actors
-        print('centroid')
 
         centroid_actors[obj]['selected'] = not centroid_actors[obj]['selected']
+        cluster_actors[centroid_actors[obj]['cluster_actor']]['selected'] = \
+            centroid_actors[obj]['selected']
         show_m.render()
 
+    def left_click_cluster_callback(obj, event):
+
+        if cluster_actors[obj]['selected']:
+            cluster_actors[obj]['centroid_actor'].VisibilityOn()
+            obj.VisibilityOff()
+        show_m.render()
 
     """
     for act in centroid_actors:
 
         act.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
-
     """
 
     for cl in cluster_actors:
-
         cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
                        1.0)
         cluster_actors[cl]['centroid_actor'].AddObserver(
             'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
-
 
     # for prop in picked_actors.values():
     #   prop.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
@@ -429,7 +406,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         if cluster:
             if key == 'c' or key == 'C':
 
-                """
                 if centroid_visibility:
                     for ca in centroid_actors:
                         ca.VisibilityOff()
@@ -438,22 +414,22 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                     for ca in centroid_actors:
                         ca.VisibilityOn()
                     centroid_visibility = True
-                """
+
                 show_m.render()
 
             if key == 'a' or key == 'A':
-                """
+                # """
                 if select_all:
                     for bundle in cluster_actors.keys():
                         bundle.VisibilityOn()
-                        cluster_actors[bundle]['pair'].VisibilityOff()
+                        cluster_actors[bundle]['centroid_actor'].VisibilityOff()
                 else:
                     for bundle in cluster_actors.keys():
                         bundle.VisibilityOff()
-                        cluster_actors[bundle]['pair'].VisibilityOn()
+                        cluster_actors[bundle]['centroid_actor'].VisibilityOn()
 
                 select_all = not select_all
-                """
+                # """
                 show_m.render()
 
             if key == 'e' or key == 'E':
@@ -465,7 +441,10 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
                 show_m.render()
 
-            if key == 'o' or key == 'O':
+            if key == 'h' or key == 'H':
+                # !NEEDS WORK
+                for c in cluster_actors:
+                    cluster_actors[c]['selected'] = 0
 
                 """
                 opacity_level += 0.1
