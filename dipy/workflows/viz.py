@@ -17,6 +17,22 @@ def check_range(streamline, lt, gt):
         return False
 
 
+def build_label(text):
+    label = ui.TextBlock2D()
+    label.message = text
+    label.font_size = 18
+    label.font_family = 'Arial'
+    label.justification = 'left'
+    label.bold = False
+    label.italic = False
+    label.shadow = False
+    label.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
+    label.actor.GetTextProperty().SetBackgroundOpacity(0.0)
+    label.color = (1, 1, 1)
+
+    return label
+
+
 def slicer_panel(renderer, data, affine, world_coords):
 
     shape = data.shape
@@ -121,21 +137,6 @@ def slicer_panel(renderer, data, affine, world_coords):
                                 "LeftButtonPressEvent",
                                 change_opacity)
 
-    def build_label(text):
-        label = ui.TextBlock2D()
-        label.message = text
-        label.font_size = 18
-        label.font_family = 'Arial'
-        label.justification = 'left'
-        label.bold = False
-        label.italic = False
-        label.shadow = False
-        label.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
-        label.actor.GetTextProperty().SetBackgroundOpacity(0.0)
-        label.color = (1, 1, 1)
-
-        return label
-
     line_slider_label_z = build_label(text="Z Slice")
     line_slider_label_x = build_label(text="X Slice")
     line_slider_label_y = build_label(text="Y Slice")
@@ -225,7 +226,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     global cluster_access
     centroid_actors = {}
     cluster_actors = {}
-    global tractogram_clusters, text_block
+    global tractogram_clusters, text_block, show_m
     tractogram_clusters = {}
 
     global opacity_level
@@ -314,29 +315,78 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     show_m.initialize()
 
     if cluster:
-        line_slider = ui.LineSlider2D(min_value=0,
-                                      max_value=100,
+
+        lengths = np.array(
+            [cluster_actors[c]['length'] for c in cluster_actors])
+        sizes = np.array([cluster_actors[c]['size'] for c in cluster_actors])
+
+        global panel2
+        panel2 = ui.Panel2D(center=(1030, 320),
+                            size=(300, 200),
+                            color=(1, 1, 1),
+                            opacity=0.1,
+                            align="right")
+
+        slider_label_length = build_label(text="Length")
+        slider_length = ui.LineSlider2D(min_value=lengths.min(),
+                                        max_value=lengths.max(),
+                                        initial_value=1,
+                                        text_template="{value:.0f}",
+                                        length=140)
+
+        slider_label_size = build_label(text="Size")
+        slider_size = ui.LineSlider2D(min_value=sizes.min(),
+                                      max_value=sizes.max(),
                                       initial_value=1,
                                       text_template="{value:.0f}",
                                       length=140)
 
-        def hide_clusters(i_ren, obj, slider):
+
+        def hide_clusters_length(i_ren, obj, slider):
             global show_m
             sz = np.round(slider.value)
-            cluster_actors
+            for k in cluster_actors:
+                if cluster_actors[k]['length'] < sz:
+                    k.SetVisibility(0)
+                    # cluster_actors[k]['centroid_actor'].SetVisibility(0)
+                else:
+                    k.SetVisibility(1)
+                    # cluster_actors[k]['centroid_actor'].SetVisibility(1)
+            show_m.render()
+
+        def hide_clusters_size(i_ren, obj, slider):
+            global show_m
+            sz = np.round(slider.value)
             for k in cluster_actors:
                 if cluster_actors[k]['size'] < sz:
                     k.SetVisibility(0)
+                    # cluster_actors[k]['centroid_actor'].SetVisibility(0)
+                else:
+                    k.SetVisibility(1)
+                    # cluster_actors[k]['centroid_actor'].SetVisibility(1)
             show_m.render()
 
-        line_slider.add_callback(line_slider.slider_disk,
-                                 "MouseMoveEvent",
-                                 hide_clusters)
-        line_slider.add_callback(line_slider.slider_line,
-                                 "LeftButtonPressEvent",
-                                 hide_clusters)
+        slider_length.add_callback(slider_length.slider_disk,
+                                   "MouseMoveEvent",
+                                   hide_clusters_length)
+        slider_length.add_callback(slider_length.slider_line,
+                                   "LeftButtonPressEvent",
+                                   hide_clusters_length)
 
-        ren.add(line_slider)
+        panel2.add_element(slider_label_length, 'relative', (0.1, 0.333))
+        panel2.add_element(slider_length, 'relative', (0.65, 0.333))
+
+        slider_size.add_callback(slider_size.slider_disk,
+                                 "MouseMoveEvent",
+                                 hide_clusters_size)
+        slider_size.add_callback(slider_size.slider_line,
+                                 "LeftButtonPressEvent",
+                                 hide_clusters_size)
+
+        panel2.add_element(slider_label_size, 'relative', (0.1, 0.6666))
+        panel2.add_element(slider_size, 'relative', (0.65, 0.6666))
+
+        ren.add(panel2)
 
     if len(images) > 0:
 
@@ -359,6 +409,8 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             size_change = [size[0] - size_old[0], 0]
             if data is not None:
                 panel.re_align(size_change)
+            if cluster:
+                panel2.re_align(size_change)
 
     show_m.initialize()
 
@@ -418,7 +470,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                 show_m.render()
 
             if key == 'a' or key == 'A':
-                # """
                 if select_all:
                     for bundle in cluster_actors.keys():
                         bundle.VisibilityOn()
@@ -429,7 +480,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         cluster_actors[bundle]['centroid_actor'].VisibilityOn()
 
                 select_all = not select_all
-                # """
                 show_m.render()
 
             if key == 'e' or key == 'E':
@@ -439,6 +489,11 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         centroid_actors[c]['cluster_actor'].VisibilityOn()
                         c.VisibilityOff()
 
+                show_m.render()
+
+            if key == 'o' or key == 'O':
+                for c in centroid_actors:
+                    centroid_actors[c]['selected'] = 1
                 show_m.render()
 
             if key == 'h' or key == 'H':
