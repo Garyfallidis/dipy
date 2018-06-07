@@ -320,7 +320,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             [cluster_actors[c]['length'] for c in cluster_actors])
         sizes = np.array([cluster_actors[c]['size'] for c in cluster_actors])
 
-        global panel2
+        global panel2, slider_length, slider_size
         panel2 = ui.Panel2D(center=(1030, 320),
                             size=(300, 200),
                             color=(1, 1, 1),
@@ -341,29 +341,30 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                                       text_template="{value:.0f}",
                                       length=140)
 
+        global length_min, size_min
+        size_min = sizes.min()
+        length_min = lengths.min()
 
         def hide_clusters_length(i_ren, obj, slider):
-            global show_m
-            sz = np.round(slider.value)
+            global show_m, length_min, size_min
+            length_min = np.round(slider.value)
+
             for k in cluster_actors:
-                if cluster_actors[k]['length'] < sz:
-                    k.SetVisibility(0)
-                    # cluster_actors[k]['centroid_actor'].SetVisibility(0)
+                if cluster_actors[k]['length'] < length_min or cluster_actors[k]['size'] < size_min :
+                    cluster_actors[k]['centroid_actor'].SetVisibility(0)
                 else:
-                    k.SetVisibility(1)
-                    # cluster_actors[k]['centroid_actor'].SetVisibility(1)
+                    cluster_actors[k]['centroid_actor'].SetVisibility(1)
             show_m.render()
 
         def hide_clusters_size(i_ren, obj, slider):
-            global show_m
-            sz = np.round(slider.value)
+            global show_m, length_min, size_min
+            size_min = np.round(slider.value)
+
             for k in cluster_actors:
-                if cluster_actors[k]['size'] < sz:
-                    k.SetVisibility(0)
-                    # cluster_actors[k]['centroid_actor'].SetVisibility(0)
+                if cluster_actors[k]['length'] < length_min or cluster_actors[k]['size'] < size_min :
+                    cluster_actors[k]['centroid_actor'].SetVisibility(0)
                 else:
-                    k.SetVisibility(1)
-                    # cluster_actors[k]['centroid_actor'].SetVisibility(1)
+                    cluster_actors[k]['centroid_actor'].SetVisibility(1)
             show_m.render()
 
         slider_length.add_callback(slider_length.slider_disk,
@@ -451,7 +452,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     centroid_visibility = True
 
     def key_press(obj, event):
-        global opacity_level
+        global opacity_level, slider_length, slider_size
         print('Inside key_press')
         global centroid_visibility, select_all, tractogram_clusters
         key = obj.GetKeySym()
@@ -471,6 +472,8 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
             if key == 'a' or key == 'A':
                 if select_all:
+                    slider_length.value=1
+                    slider_size.value=1
                     for bundle in cluster_actors.keys():
                         bundle.VisibilityOn()
                         cluster_actors[bundle]['centroid_actor'].VisibilityOff()
