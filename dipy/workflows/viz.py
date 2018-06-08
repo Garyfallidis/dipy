@@ -231,7 +231,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
     global opacity_level
     opacity_level = 0
-    # cluster_actor_access = {}
+
 
     ren = window.Renderer()
     for (t, streamlines) in enumerate(tractograms):
@@ -239,13 +239,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             colors = prng.random_sample(3)
         else:
             colors = None
-
-        """
-        if not world_coords:
-            # !!! Needs AFFINE from header or image
-            streamlines = transform_streamlines(streamlines,
-                                                np.linalg.inv(affine))
-        """
 
         if cluster:
 
@@ -273,8 +266,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
             print(' Construct cluster actors')
             for (i, c) in enumerate(centroids):
-                # if check_range(c, length_lt, length_gt):
-                    # if sizes[i] > clusters_gt and sizes[i] < clusters_lt:
+
                 centroid_actor = actor.streamtube([c], colors,
                                                   linewidth=linewidths[i],
                                                   lod=False)
@@ -292,7 +284,9 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                 # Every centroid actor is paired to a cluster actor
                 centroid_actors[centroid_actor] = {
                     'cluster_actor': cluster_actor,
-                    'cluster': i, 'tractogram': t, 'selected': 0}
+                    'cluster': i, 'tractogram': t,
+                    'size': sizes[i], 'length': centroid_lengths[i],
+                    'selected': 0}
 
                 cluster_actors[cluster_actor] = {
                     'centroid_actor': centroid_actor,
@@ -301,7 +295,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                     'selected': 0}
                 apply_shader(cluster_actor)
                 apply_shader(centroid_actor)
-
 
         else:
             streamline_actor = actor.line(streamlines, colors=colors)
@@ -330,14 +323,14 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         slider_label_length = build_label(text="Length")
         slider_length = ui.LineSlider2D(min_value=lengths.min(),
                                         max_value=lengths.max(),
-                                        initial_value=1,
+                                        initial_value=lengths.min(),
                                         text_template="{value:.0f}",
                                         length=140)
 
         slider_label_size = build_label(text="Size")
         slider_size = ui.LineSlider2D(min_value=sizes.min(),
                                       max_value=sizes.max(),
-                                      initial_value=1,
+                                      initial_value=sizes.min(),
                                       text_template="{value:.0f}",
                                       length=140)
 
@@ -390,11 +383,9 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         ren.add(panel2)
 
     if len(images) > 0:
-
         # !!Only first image loading supported')
         data, affine = images[0]
         panel = slicer_panel(ren, data, affine, world_coords)
-        # show_m.ren.add(panel)
     else:
         data = None
         affine = None
@@ -432,43 +423,58 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             obj.VisibilityOff()
         show_m.render()
 
-    """
-    for act in centroid_actors:
-
-        act.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
-    """
-
     for cl in cluster_actors:
         cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
                        1.0)
         cluster_actors[cl]['centroid_actor'].AddObserver(
             'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
 
-    # for prop in picked_actors.values():
-    #   prop.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
-
-
     global centroid_visibility
     centroid_visibility = True
+    global hide_centroids
+    hide_centroids = True
 
     def key_press(obj, event):
-        global opacity_level, slider_length, slider_size
+        global opacity_level, slider_length, slider_size, length_min, size_min
         print('Inside key_press')
-        global centroid_visibility, select_all, tractogram_clusters
+        global centroid_visibility, select_all, tractogram_clusters, hide_centroids
         key = obj.GetKeySym()
         if cluster:
+
+            """
             if key == 'c' or key == 'C':
 
+                print(length_min)
+                print(size_min)
                 if centroid_visibility:
                     for ca in centroid_actors:
-                        ca.VisibilityOff()
+                        if centroid_actors[ca]['length'] < length_min or centroid_actors[ca]['size'] < size_min :
+                            ca.VisibilityOff()
                     centroid_visibility = False
                 else:
                     for ca in centroid_actors:
-                        ca.VisibilityOn()
+                        if centroid_actors[ca]['length'] < length_min or centroid_actors[ca]['size'] < size_min :
+                            ca.VisibilityOn()
                     centroid_visibility = True
 
                 show_m.render()
+            """
+
+            # hide on/off unselected centroids
+            if key == 'h' or key == 'H':
+
+                for ca in centroid_actors:
+                    if (centroid_actors[ca]['length'] >= length_min or
+                           centroid_actors[ca]['size'] >= size_min):
+                        if centroid_actors[ca]['selected'] == 0:
+                            ca.SetVisibility(not ca.GetVisibility())
+                            #if hide_centroids:
+                            #    ca.VisibilityOff()
+                            #else:
+                            #    ca.VisibilityOn()
+                #hide_centroids = not hide_centroids
+                show_m.render()
+
 
             if key == 'a' or key == 'A':
                 if select_all:
@@ -494,23 +500,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
                 show_m.render()
 
-            if key == 'o' or key == 'O':
-                for c in centroid_actors:
-                    centroid_actors[c]['selected'] = 1
-                show_m.render()
-
-            if key == 'h' or key == 'H':
-                # !NEEDS WORK
-                for c in cluster_actors:
-                    cluster_actors[c]['selected'] = 0
-
-                """
-                opacity_level += 0.1
-                if opacity_level > 1:
-                    opacity_level = 0
-                """
-                show_m.render()
-
             if key == 's' or key == 'S':
                 saving_streamlines = Streamlines()
                 for bundle in cluster_actors.keys():
@@ -530,7 +519,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
         show_m.add_window_callback(win_callback)
         show_m.iren.AddObserver('KeyPressEvent', key_press)
-        # show_m.iren.AddObserver("EndPickEvent", pick_callback)
         show_m.render()
         show_m.start()
 
