@@ -461,19 +461,25 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             """
 
             # hide on/off unselected centroids
-            if key == 'h' or key == 'H':
+            if key == 'h':
 
                 for ca in centroid_actors:
                     if (centroid_actors[ca]['length'] >= length_min or
                            centroid_actors[ca]['size'] >= size_min):
                         if centroid_actors[ca]['selected'] == 0:
-                            ca.SetVisibility(not ca.GetVisibility())
-                            #if hide_centroids:
-                            #    ca.VisibilityOff()
-                            #else:
-                            #    ca.VisibilityOn()
-                #hide_centroids = not hide_centroids
+                            ca.VisibilityOff()
+
                 show_m.render()
+
+            if key == 'H':
+                for ca in centroid_actors:
+                    if (centroid_actors[ca]['length'] >= length_min and
+                           centroid_actors[ca]['size'] >= size_min):
+                        if centroid_actors[ca]['selected'] == 0:
+                            ca.VisibilityOn()
+
+                show_m.render()
+
 
 
             if key == 'a' or key == 'A':
