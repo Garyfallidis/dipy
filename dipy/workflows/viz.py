@@ -244,7 +244,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
             text_block = ui.TextBlock2D()
             text_block.message = \
-                ' >> a: show all, c: on/off centroids, s: save in file'
+                ' >> left click: select centroid, h: hide unselected centroids, e: show selected clusters, a: show all, s: save in file'
 
             ren.add(text_block.get_actor())
             print(' Clustering threshold {} \n'.format(cluster_thr))
@@ -422,6 +422,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             cluster_actors[obj]['centroid_actor'].VisibilityOn()
             obj.VisibilityOff()
         show_m.render()
+
 
     for cl in cluster_actors:
         cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
