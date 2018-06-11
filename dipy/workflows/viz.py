@@ -480,6 +480,21 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
             if key == 'a' or key == 'A':
                 if select_all:
+                    for ca in centroid_actors:
+                        if (centroid_actors[ca]['length'] >= length_min and
+                                centroid_actors[ca]['size'] >= size_min):
+                            centroid_actors[ca]['selected'] = 1
+                else:
+                    for ca in centroid_actors:
+                        if (centroid_actors[ca]['length'] >= length_min and
+                                centroid_actors[ca]['size'] >= size_min):
+                            centroid_actors[ca]['selected'] = 0
+                select_all = not select_all
+                show_m.render()
+
+            """
+            if key == 'a' or key == 'A':
+                if select_all:
                     slider_length.value=1
                     slider_size.value=1
                     for bundle in cluster_actors.keys():
@@ -492,7 +507,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
                 select_all = not select_all
                 show_m.render()
-
+            """
             if key == 'e' or key == 'E':
 
                 for c in centroid_actors:
