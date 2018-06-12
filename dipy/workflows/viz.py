@@ -479,41 +479,25 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                 show_m.render()
 
             if key == 'a' or key == 'A':
-                if select_all:
-                    for ca in centroid_actors:
-                        if (centroid_actors[ca]['length'] >= length_min and
+
+                for ca in centroid_actors:
+                    if (centroid_actors[ca]['length'] >= length_min and
                                 centroid_actors[ca]['size'] >= size_min):
-                            centroid_actors[ca]['selected'] = 1
-                else:
-                    for ca in centroid_actors:
-                        if (centroid_actors[ca]['length'] >= length_min and
-                                centroid_actors[ca]['size'] >= size_min):
-                            centroid_actors[ca]['selected'] = 0
-                select_all = not select_all
+                        centroid_actors[ca]['selected'] = not centroid_actors[ca]['selected']
+                        cluster_actors[centroid_actors[ca]['cluster_actor']]['selected'] = \
+                        centroid_actors[ca]['selected']
                 show_m.render()
 
-            """
-            if key == 'a' or key == 'A':
-                if select_all:
-                    slider_length.value=1
-                    slider_size.value=1
-                    for bundle in cluster_actors.keys():
-                        bundle.VisibilityOn()
-                        cluster_actors[bundle]['centroid_actor'].VisibilityOff()
-                else:
-                    for bundle in cluster_actors.keys():
-                        bundle.VisibilityOff()
-                        cluster_actors[bundle]['centroid_actor'].VisibilityOn()
-
-                select_all = not select_all
-                show_m.render()
-            """
             if key == 'e' or key == 'E':
 
                 for c in centroid_actors:
                     if centroid_actors[c]['selected']:
+                        #if centroid_actors[c]['cluster_actor'].GetVisibility():
                         centroid_actors[c]['cluster_actor'].VisibilityOn()
                         c.VisibilityOff()
+                        #else:
+                        #    centroid_actors[c]['cluster_actor'].VisibilityOff()
+                        #    c.VisibilityOn()
 
                 show_m.render()
 
@@ -527,7 +511,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         saving_streamlines.extend(Streamlines(indices))
                 print('Saving result in tmp.trk')
                 save_trk('tmp.trk', saving_streamlines, np.eye(4))
-
 
     ren.zoom(1.5)
     ren.reset_clipping_range()
