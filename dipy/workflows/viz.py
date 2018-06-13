@@ -218,8 +218,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
     world_coords = True
     interactive = True
-    global select_all
-    select_all = False
 
     prng = np.random.RandomState(27)  # 1838
     global centroid_actors, cluster_actors, visible_centroids, visible_clusters
@@ -244,7 +242,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
             text_block = ui.TextBlock2D()
             text_block.message = \
-                ' >> left click: select centroid, h: hide unselected centroids, e: show selected clusters, a: show all, s: save in file'
+                ' >> left click: select centroid, i: invert selection, h: hide unselected centroids\n >> e: show selected clusters, a: select all centroids, s: save in file'
 
             ren.add(text_block.get_actor())
             print(' Clustering threshold {} \n'.format(cluster_thr))
@@ -434,9 +432,13 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     centroid_visibility = True
     global hide_centroids
     hide_centroids = True
+    global select_all
+    select_all = False
+    global expand_all
+    expand_all = False
 
     def key_press(obj, event):
-        global opacity_level, slider_length, slider_size, length_min, size_min
+        global opacity_level, slider_length, slider_size, length_min, size_min, expand_all
         print('Inside key_press')
         global centroid_visibility, select_all, tractogram_clusters, hide_centroids
         key = obj.GetKeySym()
@@ -478,7 +480,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                 hide_centroids = not hide_centroids
                 show_m.render()
 
-            if key == 'a' or key == 'A':
+            if key == 'i' or key == 'I':
 
                 for ca in centroid_actors:
                     if (centroid_actors[ca]['length'] >= length_min and
@@ -488,17 +490,45 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         centroid_actors[ca]['selected']
                 show_m.render()
 
+            if key == 'a' or key == 'A':
+
+                if select_all == False:
+                    for ca in centroid_actors:
+                        if (centroid_actors[ca]['length'] >= length_min and
+                                    centroid_actors[ca]['size'] >= size_min):
+                            centroid_actors[ca]['selected'] = 1
+                            cluster_actors[centroid_actors[ca]['cluster_actor']]['selected'] = \
+                            centroid_actors[ca]['selected']
+                    show_m.render()
+                    select_all = True
+                elif select_all == True:
+                    for ca in centroid_actors:
+                        if (centroid_actors[ca]['length'] >= length_min and
+                                    centroid_actors[ca]['size'] >= size_min):
+                            centroid_actors[ca]['selected'] = 0
+                            cluster_actors[centroid_actors[ca]['cluster_actor']]['selected'] = \
+                            centroid_actors[ca]['selected']
+                    show_m.render()
+                    select_all = False
+
+
             if key == 'e' or key == 'E':
-
-                for c in centroid_actors:
-                    if centroid_actors[c]['selected']:
-                        #if centroid_actors[c]['cluster_actor'].GetVisibility():
-                        centroid_actors[c]['cluster_actor'].VisibilityOn()
-                        c.VisibilityOff()
-                        #else:
-                        #    centroid_actors[c]['cluster_actor'].VisibilityOff()
-                        #    c.VisibilityOn()
-
+                if expand_all == False:
+                    for c in centroid_actors:
+                        if centroid_actors[c]['selected']:
+                            if (centroid_actors[c]['length'] >= length_min and
+                                    centroid_actors[c]['size'] >= size_min):
+                                centroid_actors[c]['cluster_actor'].VisibilityOn()
+                                c.VisibilityOff()
+                    expand_all = True
+                elif expand_all == True:
+                    for c in centroid_actors:
+                        if centroid_actors[c]['selected']:
+                            if (centroid_actors[c]['length'] >= length_min and
+                                    centroid_actors[c]['size'] >= size_min):
+                                centroid_actors[c]['cluster_actor'].VisibilityOff()
+                                c.VisibilityOn()
+                    expand_all = False
                 show_m.render()
 
             if key == 's' or key == 'S':
