@@ -337,12 +337,14 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         length_min = lengths.min()
 
         def hide_clusters_length(i_ren, obj, slider):
-            global show_m, length_min, size_min
+            global show_m, length_min, size_min, expand_all
             length_min = np.round(slider.value)
 
             for k in cluster_actors:
                 if cluster_actors[k]['length'] < length_min or cluster_actors[k]['size'] < size_min :
                     cluster_actors[k]['centroid_actor'].SetVisibility(0)
+                    if k.GetVisibility() == 1:
+                        k.SetVisibility(0)
                 else:
                     cluster_actors[k]['centroid_actor'].SetVisibility(1)
             show_m.render()
@@ -354,6 +356,8 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             for k in cluster_actors:
                 if cluster_actors[k]['length'] < length_min or cluster_actors[k]['size'] < size_min :
                     cluster_actors[k]['centroid_actor'].SetVisibility(0)
+                    if k.GetVisibility() == 1:
+                        k.SetVisibility(0)
                 else:
                     cluster_actors[k]['centroid_actor'].SetVisibility(1)
             show_m.render()
