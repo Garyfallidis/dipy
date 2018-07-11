@@ -422,7 +422,9 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
         if cluster_actors[obj]['selected']:
             cluster_actors[obj]['centroid_actor'].VisibilityOn()
+            centroid_actors[cluster_actors[obj]['centroid_actor']]['selected'] = 0
             obj.VisibilityOff()
+
         show_m.render()
 
 
