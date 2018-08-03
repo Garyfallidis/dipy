@@ -241,7 +241,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
             text_block = ui.TextBlock2D()
             text_block.message = \
-                ' >> left click: select centroid, i: invert selection, h: hide unselected centroids\n >> e: show selected clusters, a: select all centroids, s: save in file'
+                ' >> left click: select centroid, i: invert selection, h: hide unselected centroids\n >> e: show selected clusters, a: select all centroids and remove highlight s: save in file'
 
             ren.add(text_block.get_actor())
             print(' Clustering threshold {} \n'.format(cluster_thr))
