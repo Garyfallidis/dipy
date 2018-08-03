@@ -517,12 +517,13 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                                 centroid_actors[c]['cluster_actor'].VisibilityOn()
                                 c.VisibilityOff()
                                 centroid_actors[c]['expanded'] = 1
-                        else:
-                            if (centroid_actors[c]['length'] >= length_min and
-                                    centroid_actors[c]['size'] >= size_min):
-                                centroid_actors[c]['cluster_actor'].VisibilityOff()
-                                c.VisibilityOn()
-                                centroid_actors[c]['expanded'] = 0
+
+#                        else:
+#                            if (centroid_actors[c]['length'] >= length_min and
+#                                    centroid_actors[c]['size'] >= size_min):
+#                                centroid_actors[c]['cluster_actor'].VisibilityOff()
+#                                c.VisibilityOn()
+#                                centroid_actors[c]['expanded'] = 0
 
                 show_m.render()
 
