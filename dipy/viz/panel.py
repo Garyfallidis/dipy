@@ -99,36 +99,6 @@ def slicer_panel(renderer, data, affine, world_coords):
     line_slider_x.on_change = change_slice_x
     opacity_slider.on_change = change_opacity
 
-    """
-    line_slider_z.add_callback(line_slider_z.slider_disk,
-                               "MouseMoveEvent",
-                               change_slice_z)
-    line_slider_z.add_callback(line_slider_z.slider_line,
-                               "LeftButtonPressEvent",
-                               change_slice_z)
-
-    line_slider_x.add_callback(line_slider_x.slider_disk,
-                               "MouseMoveEvent",
-                               change_slice_x)
-    line_slider_x.add_callback(line_slider_x.slider_line,
-                               "LeftButtonPressEvent",
-                               change_slice_x)
-
-    line_slider_y.add_callback(line_slider_y.slider_disk,
-                               "MouseMoveEvent",
-                               change_slice_y)
-    line_slider_y.add_callback(line_slider_y.slider_line,
-                               "LeftButtonPressEvent",
-                               change_slice_y)
-
-    opacity_slider.add_callback(opacity_slider.slider_disk,
-                                "MouseMoveEvent",
-                                change_opacity)
-    opacity_slider.add_callback(opacity_slider.slider_line,
-                                "LeftButtonPressEvent",
-                                change_opacity)
-    """
-
     line_slider_label_z = build_label(text="Z Slice")
     line_slider_label_x = build_label(text="X Slice")
     line_slider_label_y = build_label(text="Y Slice")
