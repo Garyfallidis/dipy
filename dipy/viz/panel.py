@@ -3,6 +3,17 @@ from dipy.viz import actor, window, ui
 
 
 def build_label(text):
+    """ Simple utility function to build labels
+
+    Parameters
+    ----------
+    text : str
+
+    Returns
+    -------
+    label : TextBlock2D
+    """
+
     label = ui.TextBlock2D()
     label.message = text
     label.font_size = 18
@@ -18,7 +29,22 @@ def build_label(text):
     return label
 
 
-def slicer_panel(renderer, data, affine, world_coords):
+def slicer_panel(renderer, data=None, affine=None, world_coords=False):
+    """ Slicer panel with slicer included
+
+    Parameters
+    ----------
+    renderer : Renderer
+    data : 3d ndarray
+    affine : 4x4 ndarray
+    world_coords : bool
+        If True then the affine is applied.
+
+    Returns
+    -------
+    panel : Panel
+
+    """"
 
     shape = data.shape
     if not world_coords:
