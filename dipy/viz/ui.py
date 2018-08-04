@@ -1766,7 +1766,7 @@ class LineSlider2D(UI):
         """
         self.shape = shape
         self.default_color = (1, 1, 1)
-        self.active_color = (0, 0, 1)
+        self.active_color = (.7, .7, .7)
         super(LineSlider2D, self).__init__()
 
         self.track.width = length
