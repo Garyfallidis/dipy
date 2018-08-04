@@ -7,6 +7,7 @@ from dipy.segment.clustering import qbx_and_merge
 from dipy.viz import actor, window, ui
 from dipy.viz.window import vtk
 from dipy.viz.utils import get_polydata_lines
+from dipy.viz.panel import slicer_panel, build_label
 
 
 def check_range(streamline, lt, gt):
@@ -15,150 +16,6 @@ def check_range(streamline, lt, gt):
         return True
     else:
         return False
-
-
-def build_label(text):
-    label = ui.TextBlock2D()
-    label.message = text
-    label.font_size = 18
-    label.font_family = 'Arial'
-    label.justification = 'left'
-    label.bold = False
-    label.italic = False
-    label.shadow = False
-    label.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
-    label.actor.GetTextProperty().SetBackgroundOpacity(0.0)
-    label.color = (1, 1, 1)
-
-    return label
-
-
-def slicer_panel(renderer, data, affine, world_coords):
-
-    shape = data.shape
-    if not world_coords:
-        image_actor_z = actor.slicer(data, affine=np.eye(4))
-    else:
-        image_actor_z = actor.slicer(data, affine)
-
-    slicer_opacity = 0.6
-    image_actor_z.opacity(slicer_opacity)
-
-    image_actor_x = image_actor_z.copy()
-    x_midpoint = int(np.round(shape[0] / 2))
-    image_actor_x.display_extent(x_midpoint,
-                                 x_midpoint, 0,
-                                 shape[1] - 1,
-                                 0,
-                                 shape[2] - 1)
-
-    image_actor_y = image_actor_z.copy()
-    y_midpoint = int(np.round(shape[1] / 2))
-    image_actor_y.display_extent(0,
-                                 shape[0] - 1,
-                                 y_midpoint,
-                                 y_midpoint,
-                                 0,
-                                 shape[2] - 1)
-
-    renderer.add(image_actor_z)
-    renderer.add(image_actor_x)
-    renderer.add(image_actor_y)
-
-    line_slider_z = ui.LineSlider2D(min_value=0,
-                                    max_value=shape[2] - 1,
-                                    initial_value=shape[2] / 2,
-                                    text_template="{value:.0f}",
-                                    length=140)
-
-    line_slider_x = ui.LineSlider2D(min_value=0,
-                                    max_value=shape[0] - 1,
-                                    initial_value=shape[0] / 2,
-                                    text_template="{value:.0f}",
-                                    length=140)
-
-    line_slider_y = ui.LineSlider2D(min_value=0,
-                                    max_value=shape[1] - 1,
-                                    initial_value=shape[1] / 2,
-                                    text_template="{value:.0f}",
-                                    length=140)
-
-    opacity_slider = ui.LineSlider2D(min_value=0.0,
-                                     max_value=1.0,
-                                     initial_value=slicer_opacity,
-                                     length=140)
-
-    def change_slice_z(i_ren, obj, slider):
-        z = int(np.round(slider.value))
-        image_actor_z.display_extent(0, shape[0] - 1,
-                                     0, shape[1] - 1, z, z)
-
-    def change_slice_x(i_ren, obj, slider):
-        x = int(np.round(slider.value))
-        image_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
-                                     shape[2] - 1)
-
-    def change_slice_y(i_ren, obj, slider):
-        y = int(np.round(slider.value))
-        image_actor_y.display_extent(0, shape[0] - 1, y, y,
-                                     0, shape[2] - 1)
-
-    def change_opacity(i_ren, obj, slider):
-        slicer_opacity = slider.value
-        image_actor_z.opacity(slicer_opacity)
-        image_actor_x.opacity(slicer_opacity)
-        image_actor_y.opacity(slicer_opacity)
-
-    line_slider_z.add_callback(line_slider_z.slider_disk,
-                               "MouseMoveEvent",
-                               change_slice_z)
-    line_slider_z.add_callback(line_slider_z.slider_line,
-                               "LeftButtonPressEvent",
-                               change_slice_z)
-
-    line_slider_x.add_callback(line_slider_x.slider_disk,
-                               "MouseMoveEvent",
-                               change_slice_x)
-    line_slider_x.add_callback(line_slider_x.slider_line,
-                               "LeftButtonPressEvent",
-                               change_slice_x)
-
-    line_slider_y.add_callback(line_slider_y.slider_disk,
-                               "MouseMoveEvent",
-                               change_slice_y)
-    line_slider_y.add_callback(line_slider_y.slider_line,
-                               "LeftButtonPressEvent",
-                               change_slice_y)
-
-    opacity_slider.add_callback(opacity_slider.slider_disk,
-                                "MouseMoveEvent",
-                                change_opacity)
-    opacity_slider.add_callback(opacity_slider.slider_line,
-                                "LeftButtonPressEvent",
-                                change_opacity)
-
-    line_slider_label_z = build_label(text="Z Slice")
-    line_slider_label_x = build_label(text="X Slice")
-    line_slider_label_y = build_label(text="Y Slice")
-    opacity_slider_label = build_label(text="Opacity")
-
-    panel = ui.Panel2D(center=(1030, 120),
-                       size=(300, 200),
-                       color=(1, 1, 1),
-                       opacity=0.1,
-                       align="right")
-
-    panel.add_element(line_slider_label_x, 'relative', (0.1, 0.75))
-    panel.add_element(line_slider_x, 'relative', (0.65, 0.8))
-    panel.add_element(line_slider_label_y, 'relative', (0.1, 0.55))
-    panel.add_element(line_slider_y, 'relative', (0.65, 0.6))
-    panel.add_element(line_slider_label_z, 'relative', (0.1, 0.35))
-    panel.add_element(line_slider_z, 'relative', (0.65, 0.4))
-    panel.add_element(opacity_slider_label, 'relative', (0.1, 0.15))
-    panel.add_element(opacity_slider, 'relative', (0.65, 0.2))
-
-    renderer.add(panel)
-    return panel
 
 
 def apply_shader(actor):
@@ -243,7 +100,10 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             text_block.message = \
                 ' >> left click: select centroid, i: invert selection, h: hide unselected centroids\n >> e: show selected clusters, a: select all centroids and remove highlight s: save in file'
 
-            ren.add(text_block.get_actor())
+            # ren.add(text_block.get_actor())
+            ren.add(text_block.actors[0])
+            #from pdb import set_trace
+            #set_trace()
             print(' Clustering threshold {} \n'.format(cluster_thr))
             clusters = qbx_and_merge(streamlines,
                                      [40, 30, 25, 20, cluster_thr])
@@ -311,8 +171,8 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         sizes = np.array([cluster_actors[c]['size'] for c in cluster_actors])
 
         global panel2, slider_length, slider_size
-        panel2 = ui.Panel2D(center=(1030, 320),
-                            size=(300, 200),
+        panel2 = ui.Panel2D(size=(300, 200),
+                            position=(850, 320),
                             color=(1, 1, 1),
                             opacity=0.1,
                             align="right")
@@ -335,7 +195,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         size_min = sizes.min()
         length_min = lengths.min()
 
-        def hide_clusters_length(i_ren, obj, slider):
+        def hide_clusters_length(slider):
             global show_m, length_min, size_min, expand_all
             length_min = np.round(slider.value)
 
@@ -348,7 +208,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                     cluster_actors[k]['centroid_actor'].SetVisibility(1)
             show_m.render()
 
-        def hide_clusters_size(i_ren, obj, slider):
+        def hide_clusters_size(slider):
             global show_m, length_min, size_min
             size_min = np.round(slider.value)
 
@@ -361,25 +221,16 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                     cluster_actors[k]['centroid_actor'].SetVisibility(1)
             show_m.render()
 
-        slider_length.add_callback(slider_length.slider_disk,
-                                   "MouseMoveEvent",
-                                   hide_clusters_length)
-        slider_length.add_callback(slider_length.slider_line,
-                                   "LeftButtonPressEvent",
-                                   hide_clusters_length)
 
-        panel2.add_element(slider_label_length, 'relative', (0.1, 0.333))
-        panel2.add_element(slider_length, 'relative', (0.65, 0.333))
+        slider_length.on_change = hide_clusters_length
 
-        slider_size.add_callback(slider_size.slider_disk,
-                                 "MouseMoveEvent",
-                                 hide_clusters_size)
-        slider_size.add_callback(slider_size.slider_line,
-                                 "LeftButtonPressEvent",
-                                 hide_clusters_size)
+        panel2.add_element(slider_label_length, coords=(0.1, 0.333))
+        panel2.add_element(slider_length, coords=(0.4, 0.333))
 
-        panel2.add_element(slider_label_size, 'relative', (0.1, 0.6666))
-        panel2.add_element(slider_size, 'relative', (0.65, 0.6666))
+        slider_size.on_change = hide_clusters_size
+
+        panel2.add_element(slider_label_size, coords=(0.1, 0.6666))
+        panel2.add_element(slider_size, coords=(0.4, 0.6666))
 
         ren.add(panel2)
 
@@ -427,13 +278,11 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
         show_m.render()
 
-
     for cl in cluster_actors:
         cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
                        1.0)
         cluster_actors[cl]['centroid_actor'].AddObserver(
             'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
-
 
     global hide_centroids
     hide_centroids = True
@@ -517,13 +366,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                                 centroid_actors[c]['cluster_actor'].VisibilityOn()
                                 c.VisibilityOff()
                                 centroid_actors[c]['expanded'] = 1
-
-#                        else:
-#                            if (centroid_actors[c]['length'] >= length_min and
-#                                    centroid_actors[c]['size'] >= size_min):
-#                                centroid_actors[c]['cluster_actor'].VisibilityOff()
-#                                c.VisibilityOn()
-#                                centroid_actors[c]['expanded'] = 0
 
                 show_m.render()
 
