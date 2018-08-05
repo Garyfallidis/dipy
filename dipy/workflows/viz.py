@@ -71,10 +71,8 @@ def apply_shader(actor):
 
 
 def horizon(tractograms, images, cluster, cluster_thr, random_colors,
-            length_lt, length_gt, clusters_lt, clusters_gt):
-
-    world_coords = True
-    interactive = True
+            length_lt, length_gt, clusters_lt, clusters_gt,
+            world_coords=True, interactive=True):
 
     prng = np.random.RandomState(27)  # 1838
     global centroid_actors, cluster_actors, visible_centroids, visible_clusters
@@ -100,10 +98,8 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             text_block.message = \
                 ' >> left click: select centroid, i: invert selection, h: hide unselected centroids\n >> e: show selected clusters, a: select all centroids and remove highlight s: save in file'
 
-            # ren.add(text_block.get_actor())
             ren.add(text_block.actors[0])
-            #from pdb import set_trace
-            #set_trace()
+
             print(' Clustering threshold {} \n'.format(cluster_thr))
             clusters = qbx_and_merge(streamlines,
                                      [40, 30, 25, 20, cluster_thr])
@@ -200,7 +196,8 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             length_min = np.round(slider.value)
 
             for k in cluster_actors:
-                if cluster_actors[k]['length'] < length_min or cluster_actors[k]['size'] < size_min :
+                if (cluster_actors[k]['length'] < length_min or
+                        cluster_actors[k]['size'] < size_min):
                     cluster_actors[k]['centroid_actor'].SetVisibility(0)
                     if k.GetVisibility() == 1:
                         k.SetVisibility(0)
@@ -213,14 +210,14 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             size_min = np.round(slider.value)
 
             for k in cluster_actors:
-                if cluster_actors[k]['length'] < length_min or cluster_actors[k]['size'] < size_min :
+                if (cluster_actors[k]['length'] < length_min or
+                        cluster_actors[k]['size'] < size_min):
                     cluster_actors[k]['centroid_actor'].SetVisibility(0)
                     if k.GetVisibility() == 1:
                         k.SetVisibility(0)
                 else:
                     cluster_actors[k]['centroid_actor'].SetVisibility(1)
             show_m.render()
-
 
         slider_length.on_change = hide_clusters_length
 
@@ -235,7 +232,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         ren.add(panel2)
 
     if len(images) > 0:
-        # !!Only first image loading supported')
+        # !!Only first image loading supported for now')
         data, affine = images[0]
         panel = slicer_panel(ren, data, affine, world_coords)
     else:
@@ -272,9 +269,10 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
         if cluster_actors[obj]['selected']:
             cluster_actors[obj]['centroid_actor'].VisibilityOn()
-            centroid_actors[cluster_actors[obj]['centroid_actor']]['selected'] = 0
+            ca = cluster_actors[obj]['centroid_actor']
+            centroid_actors[ca]['selected'] = 0
             obj.VisibilityOff()
-            centroid_actors[cluster_actors[obj]['centroid_actor']]['expanded'] = 0
+            centroid_actors[ca]['expanded'] = 0
 
         show_m.render()
 
@@ -400,7 +398,7 @@ class HorizonFlow(Workflow):
             random_colors=False,
             length_lt=1000, length_gt=0,
             clusters_lt=10**8, clusters_gt=0):
-        """ Advanced visualization utility
+        """ Advanced visualization application
 
         Parameters
         ----------
