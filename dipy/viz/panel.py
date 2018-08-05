@@ -44,7 +44,7 @@ def slicer_panel(renderer, data=None, affine=None, world_coords=False):
     -------
     panel : Panel
 
-    """"
+    """
 
     shape = data.shape
     if not world_coords:
