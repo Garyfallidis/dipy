@@ -318,8 +318,10 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                 for ca in centroid_actors:
                     if (centroid_actors[ca]['length'] >= length_min and
                             centroid_actors[ca]['size'] >= size_min):
-                        centroid_actors[ca]['selected'] = not centroid_actors[ca]['selected']
-                        cluster_actors[centroid_actors[ca]['cluster_actor']]['selected'] = \
+                        centroid_actors[ca]['selected'] = \
+                            not centroid_actors[ca]['selected']
+                        cas = centroid_actors[ca]['cluster_actor']
+                        cluster_actors[cas]['selected'] = \
                             centroid_actors[ca]['selected']
                 show_m.render()
 
@@ -342,17 +344,19 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         if (centroid_actors[ca]['length'] >= length_min and
                                 centroid_actors[ca]['size'] >= size_min):
                             centroid_actors[ca]['selected'] = 1
-                            cluster_actors[centroid_actors[ca]['cluster_actor']]['selected'] = \
+                            cas = centroid_actors[ca]['cluster_actor']
+                            cluster_actors[cas]['selected'] = \
                                 centroid_actors[ca]['selected']
                     show_m.render()
                     select_all = True
                 else:
                     for ca in centroid_actors:
                         if (centroid_actors[ca]['length'] >= length_min and
-                                    centroid_actors[ca]['size'] >= size_min):
+                                centroid_actors[ca]['size'] >= size_min):
                             centroid_actors[ca]['selected'] = 0
-                            cluster_actors[centroid_actors[ca]['cluster_actor']]['selected'] = \
-                            centroid_actors[ca]['selected']
+                            cas = centroid_actors[ca]['cluster_actor']
+                            cluster_actors[cas]['selected'] = \
+                                centroid_actors[ca]['selected']
                     show_m.render()
                     select_all = False
 
@@ -363,12 +367,11 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         if not centroid_actors[c]['expanded']:
                             if (centroid_actors[c]['length'] >= length_min and
                                     centroid_actors[c]['size'] >= size_min):
-                                centroid_actors[c]['cluster_actor'].VisibilityOn()
+                                centroid_actors[c]['cluster_actor']. \
+                                    VisibilityOn()
                                 c.VisibilityOff()
                                 centroid_actors[c]['expanded'] = 1
-
                 show_m.render()
-
 
     ren.zoom(1.5)
     ren.reset_clipping_range()
@@ -382,7 +385,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
     else:
 
-        window.record(ren, out_path='bundles_and_3_slices.png',
+        window.record(ren, out_path='tmp.png',
                       size=(1200, 900),
                       reset_camera=False)
 
