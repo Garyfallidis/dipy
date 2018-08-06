@@ -172,16 +172,17 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                             align="right")
 
         slider_label_length = build_label(text="Length")
-        slider_length = ui.LineSlider2D(min_value=lengths.min(),
-                                        max_value=lengths.max(),
-                                        initial_value=lengths.min(),
-                                        text_template="{value:.0f}",
-                                        length=140)
+        slider_length = ui.LineSlider2D(
+                min_value=lengths.min(),
+                max_value=np.percentile(lengths, 98),
+                initial_value=np.percentile(lengths, 25),
+                text_template="{value:.0f}",
+                length=140)
 
         slider_label_size = build_label(text="Size")
         slider_size = ui.LineSlider2D(min_value=sizes.min(),
-                                      max_value=sizes.max(),
-                                      initial_value=sizes.min(),
+                                      max_value=np.percentile(sizes, 98),
+                                      initial_value=np.percentile(sizes, 50),
                                       text_template="{value:.0f}",
                                       length=140)
 
