@@ -68,6 +68,17 @@ def apply_shader(actor):
                           vtk_shader_callback)
 
 
+HELP_MESSAGE = """
+>> left click: select centroid
+>> e: show selected clusters
+>> h: hide unselected centroids
+>> i: invert selection
+>> a: select all centroids
+>> r:reset (collapse all)
+>> s: save in file
+"""
+
+
 def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             length_lt, length_gt, clusters_lt, clusters_gt,
             world_coords=True, interactive=True):
@@ -92,11 +103,16 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
         if cluster:
 
-            text_block = ui.TextBlock2D()
-            text_block.message = \
-                ' >> left click: select centroid, i: invert selection, h: hide unselected centroids\n >> e: show selected clusters, a: select all centroids and remove highlight\n r:reset s: save in file'
+            text_block = build_label(HELP_MESSAGE, 16)  # ui.TextBlock2D()
+            text_block.message = HELP_MESSAGE
 
-            ren.add(text_block.actors[0])
+            # ren.add(text_block.actors[0])
+
+            help_panel = ui.Panel2D(size=(300, 200),
+                                    color=(1, 1, 1),
+                                    opacity=0.1,
+                                    align="left")
+
 
             print(' Clustering threshold {} \n'.format(cluster_thr))
             clusters = qbx_and_merge(streamlines,
@@ -155,7 +171,8 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             streamline_actor.GetProperty().SetOpacity(1)
             ren.add(streamline_actor)
 
-    show_m = window.ShowManager(ren, size=(1200, 900), order_transparent=True)
+    show_m = window.ShowManager(ren, size=(1200, 900), order_transparent=True,
+                                reset_camera=False)
     show_m.initialize()
 
     if cluster:
@@ -230,6 +247,9 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
         ren.add(panel2)
 
+        help_panel.add_element(text_block, coords=(0.05, 0.1))
+        ren.add(help_panel)
+
     if len(images) > 0:
         # !!Only first image loading supported for now')
         data, affine = images[0]
@@ -251,6 +271,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                 panel.re_align(size_change)
             if cluster:
                 panel2.re_align(size_change)
+                help_panel.re_align(size_change)
 
     show_m.initialize()
 
@@ -397,7 +418,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
                 show_m.render()
 
-
+    ren.reset_camera()
     ren.zoom(1.5)
     ren.reset_clipping_range()
 

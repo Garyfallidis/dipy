@@ -2,12 +2,14 @@ import numpy as np
 from dipy.viz import actor, window, ui
 
 
-def build_label(text):
+def build_label(text, font_size=18, bold=False):
     """ Simple utility function to build labels
 
     Parameters
     ----------
     text : str
+    font_size : int
+    bold : bool
 
     Returns
     -------
@@ -16,10 +18,10 @@ def build_label(text):
 
     label = ui.TextBlock2D()
     label.message = text
-    label.font_size = 18
+    label.font_size = font_size
     label.font_family = 'Arial'
     label.justification = 'left'
-    label.bold = False
+    label.bold = bold
     label.italic = False
     label.shadow = False
     label.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
