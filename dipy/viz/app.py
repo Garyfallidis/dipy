@@ -94,7 +94,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
             text_block = ui.TextBlock2D()
             text_block.message = \
-                ' >> left click: select centroid, i: invert selection, h: hide unselected centroids\n >> e: show selected clusters, a: select all centroids and remove highlight s: save in file'
+                ' >> left click: select centroid, i: invert selection, h: hide unselected centroids\n >> e: show selected clusters, a: select all centroids and remove highlight\n r:reset s: save in file'
 
             ren.add(text_block.actors[0])
 
@@ -368,7 +368,35 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                                     VisibilityOn()
                                 c.VisibilityOff()
                                 centroid_actors[c]['expanded'] = 1
+#                        else:
+#                            if (centroid_actors[c]['length'] >= length_min and
+#                                    centroid_actors[c]['size'] >= size_min):
+#                                centroid_actors[c]['cluster_actor']. \
+#                                    VisibilityOff()
+#                                c.VisibilityOn()
+#                                centroid_actors[c]['expanded'] = 0
+
                 show_m.render()
+
+            if key == 'r' or key == 'R':
+
+                for c in centroid_actors:
+                    centroid_actors[c]['cluster_actor'].VisibilityOff()
+                    c.VisibilityOn()
+                    centroid_actors[c]['expanded'] = 0
+
+#                    if centroid_actors[c]['selected']:
+#                        if centroid_actors[c]['expanded']:
+#
+#                            if (centroid_actors[c]['length'] >= length_min and
+#                                    centroid_actors[c]['size'] >= size_min):
+#                                centroid_actors[c]['cluster_actor']. \
+#                                    VisibilityOff()
+#                                c.VisibilityOn()
+#                                centroid_actors[c]['expanded'] = 0
+
+                show_m.render()
+
 
     ren.zoom(1.5)
     ren.reset_clipping_range()
