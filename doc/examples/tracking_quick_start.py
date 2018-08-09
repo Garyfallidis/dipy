@@ -67,6 +67,34 @@ Next, we use ``peaks_from_model`` to fit the data and calculated the fiber
 directions in all voxels.
 """
 
+
+print(np.sum(mask > 0))
+
+
+from time import time
+
+t1 = time()
+
+csd_fit_1proc = csd_model.fit(data, mask, nb_processes=2)
+
+t2 = time()
+Dt = t2 - t1
+print(Dt)
+
+csd_fit_nproc = csd_model.fit(data, mask, nb_processes=4)
+
+t3 = time()
+Dt2 = t3 - t2
+print(Dt2)
+
+csd_fit_nproc = csd_model.fit(data, mask, nb_processes=12)
+
+t4 = time()
+Dt3 = t4 - t3
+print(Dt3)
+
+1/0
+
 sphere = get_sphere('symmetric724')
 
 csd_peaks = peaks_from_model(model=csd_model,
