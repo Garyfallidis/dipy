@@ -106,7 +106,7 @@ renderer.set_camera(position=(10, 5, 7), focal_point=(0.5, 0.5, 0.5))
 renderer.zoom(3)
 
 # display
-# window.show(renderer, size=(600, 600), reset_camera=False)
+window.show(renderer, size=(600, 600), reset_camera=False)
 window.record(renderer, out_path='cube.png', size=(600, 600))
 
 """

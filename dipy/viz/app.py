@@ -402,9 +402,12 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             if key == 'r' or key == 'R':
 
                 for c in centroid_actors:
-                    centroid_actors[c]['cluster_actor'].VisibilityOff()
-                    c.VisibilityOn()
-                    centroid_actors[c]['expanded'] = 0
+
+                    if (centroid_actors[c]['length'] >= length_min and
+                            centroid_actors[c]['size'] >= size_min):
+                        centroid_actors[c]['cluster_actor'].VisibilityOff()
+                        c.VisibilityOn()
+                        centroid_actors[c]['expanded'] = 0
 
 #                    if centroid_actors[c]['selected']:
 #                        if centroid_actors[c]['expanded']:
@@ -416,7 +419,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 #                                c.VisibilityOn()
 #                                centroid_actors[c]['expanded'] = 0
 
-                show_m.render()
+            show_m.render()
 
     ren.reset_camera()
     ren.zoom(1.5)
