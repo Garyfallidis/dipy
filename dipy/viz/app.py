@@ -70,11 +70,11 @@ def apply_shader(actor):
 
 HELP_MESSAGE = """
 >> left click: select centroid
->> e: show selected clusters
+>> e: expand centroids
+>> r: collapse open clusters
 >> h: hide unselected centroids
 >> i: invert selection
 >> a: select all centroids
->> r:reset (collapse all)
 >> s: save in file
 """
 
