@@ -113,7 +113,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                                     opacity=0.1,
                                     align="left")
 
-
             print(' Clustering threshold {} \n'.format(cluster_thr))
             clusters = qbx_and_merge(streamlines,
                                      [40, 30, 25, 20, cluster_thr])
@@ -153,7 +152,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                     'cluster_actor': cluster_actor,
                     'cluster': i, 'tractogram': t,
                     'size': sizes[i], 'length': centroid_lengths[i],
-                    'selected': 0, 'expanded':0}
+                    'selected': 0, 'expanded': 0}
 
                 cluster_actors[cluster_actor] = {
                     'centroid_actor': centroid_actor,
@@ -355,6 +354,22 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                 print('Saving result in tmp.trk')
                 save_trk('tmp.trk', saving_streamlines, np.eye(4))
 
+            if key == 'y' or key == 'Y':
+                active_streamlines = Streamlines()
+                for bundle in cluster_actors.keys():
+                    if bundle.GetVisibility():
+                        t = cluster_actors[bundle]['tractogram']
+                        c = cluster_actors[bundle]['cluster']
+                        indices = tractogram_clusters[t][c]
+                        active_streamlines.extend(Streamlines(indices))
+                print('Rerunning horizon')
+                horizon([active_streamlines], images, cluster=True,
+                        cluster_thr=5,
+                        random_colors=random_colors,
+                        length_lt=length_lt, length_gt=length_gt,
+                        clusters_lt=clusters_lt,
+                        clusters_gt=clusters_gt)
+
             if key == 'a' or key == 'A':
 
                 if select_all is False:
@@ -389,13 +404,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                                     VisibilityOn()
                                 c.VisibilityOff()
                                 centroid_actors[c]['expanded'] = 1
-#                        else:
-#                            if (centroid_actors[c]['length'] >= length_min and
-#                                    centroid_actors[c]['size'] >= size_min):
-#                                centroid_actors[c]['cluster_actor']. \
-#                                    VisibilityOff()
-#                                c.VisibilityOn()
-#                                centroid_actors[c]['expanded'] = 0
 
                 show_m.render()
 
@@ -408,16 +416,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         centroid_actors[c]['cluster_actor'].VisibilityOff()
                         c.VisibilityOn()
                         centroid_actors[c]['expanded'] = 0
-
-#                    if centroid_actors[c]['selected']:
-#                        if centroid_actors[c]['expanded']:
-#
-#                            if (centroid_actors[c]['length'] >= length_min and
-#                                    centroid_actors[c]['size'] >= size_min):
-#                                centroid_actors[c]['cluster_actor']. \
-#                                    VisibilityOff()
-#                                c.VisibilityOn()
-#                                centroid_actors[c]['expanded'] = 0
 
             show_m.render()
 
