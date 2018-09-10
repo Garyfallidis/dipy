@@ -16,7 +16,7 @@ def check_range(streamline, lt, gt):
         return False
 
 
-def apply_shader_new(hz, actor):
+def apply_shader(hz, actor):
     global opacity_level
 
     gl_mapper = actor.GetMapper()
@@ -147,7 +147,9 @@ class Horizon(object):
 
                     ren.add(cluster_actor)
 
-                    # Every centroid actor is paired to a cluster actor
+                    # Every centroid actor (cea) is paired to a cluster actor
+                    # (cla).
+
                     self.cea[centroid_actor] = {
                         'cluster_actor': cluster_actor,
                         'cluster': i, 'tractogram': t,
@@ -212,7 +214,7 @@ class Horizon(object):
             length_min = lengths.min()
 
             def hide_clusters_length(slider):
-                global show_m, length_min, size_min, expand_all
+                # global show_m, length_min, size_min, expand_all
                 length_min = np.round(slider.value)
 
                 for k in self.cla:
@@ -226,7 +228,7 @@ class Horizon(object):
                 show_m.render()
 
             def hide_clusters_size(slider):
-                global show_m, length_min, size_min
+                # global show_m, length_min, size_min
                 size_min = np.round(slider.value)
 
                 for k in self.cla:
@@ -270,15 +272,15 @@ class Horizon(object):
             data = None
             affine = None
 
-        global size
-        size = ren.GetSize()
+        # global size
+        self.win_size = ren.GetSize()
 
         def win_callback(obj, event):
-            global size
-            if size != obj.GetSize():
-                size_old = size
-                size = obj.GetSize()
-                size_change = [size[0] - size_old[0], 0]
+            # global size
+            if self.win_size != obj.GetSize():
+                size_old = self.win_size
+                self.win_size = obj.GetSize()
+                size_change = [self.win_size[0] - size_old[0], 0]
                 if data is not None:
                     panel.re_align(size_change)
                 if self.cluster:
@@ -320,7 +322,8 @@ class Horizon(object):
         select_all = False
 
         def key_press(obj, event):
-            global opacity_level, slider_length, slider_size, length_min, size_min
+            global opacity_level, slider_length, slider_size, length_min
+            global size_min
             global select_all, tractogram_clusters, hide_centroids
             key = obj.GetKeySym()
             if self.cluster:
@@ -458,7 +461,3 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         renderer = hz.build_renderer()
 
         hz.build_show(renderer)
-
-
-
-
