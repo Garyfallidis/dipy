@@ -17,7 +17,6 @@ def check_range(streamline, lt, gt):
 
 
 def apply_shader(hz, actor):
-    global opacity_level
 
     gl_mapper = actor.GetMapper()
 
@@ -49,7 +48,6 @@ def apply_shader(hz, actor):
 
     @window.vtk.calldata_type(window.vtk.VTK_OBJECT)
     def vtk_shader_callback(caller, event, calldata=None):
-        global opacity_level, cluster_actors
         program = calldata
         if program is not None:
             try:
@@ -187,8 +185,8 @@ class Horizon(object):
             szs = [self.cla[c]['size'] for c in self.cla]
             sizes = np.array(szs)
 
-            global panel2, slider_length, slider_size
-            panel2 = ui.Panel2D(size=(300, 200),
+            # global self.panel2, slider_length, slider_size
+            self.panel2 = ui.Panel2D(size=(300, 200),
                                 position=(850, 320),
                                 color=(1, 1, 1),
                                 opacity=0.1,
@@ -203,23 +201,23 @@ class Horizon(object):
                     length=140)
 
             slider_label_size = build_label(text="Size")
-            slider_size = ui.LineSlider2D(min_value=sizes.min(),
-                                          max_value=np.percentile(sizes, 98),
-                                          initial_value=np.percentile(sizes, 50),
-                                          text_template="{value:.0f}",
-                                          length=140)
+            slider_size = ui.LineSlider2D(
+                    min_value=sizes.min(),
+                    max_value=np.percentile(sizes, 98),
+                    initial_value=np.percentile(sizes, 50),
+                    text_template="{value:.0f}",
+                    length=140)
 
-            global length_min, size_min
-            size_min = sizes.min()
-            length_min = lengths.min()
+            # global self.length_min, size_min
+            self.size_min = sizes.min()
+            self.length_min = lengths.min()
 
             def hide_clusters_length(slider):
-                # global show_m, length_min, size_min, expand_all
-                length_min = np.round(slider.value)
+                self.length_min = np.round(slider.value)
 
                 for k in self.cla:
-                    if (self.cla[k]['length'] < length_min or
-                            self.cla[k]['size'] < size_min):
+                    if (self.cla[k]['length'] < self.length_min or
+                            self.cla[k]['size'] < self.size_min):
                         self.cla[k]['centroid_actor'].SetVisibility(0)
                         if k.GetVisibility() == 1:
                             k.SetVisibility(0)
@@ -228,12 +226,11 @@ class Horizon(object):
                 show_m.render()
 
             def hide_clusters_size(slider):
-                # global show_m, length_min, size_min
-                size_min = np.round(slider.value)
+                self.size_min = np.round(slider.value)
 
                 for k in self.cla:
-                    if (self.cla[k]['length'] < length_min or
-                            self.cla[k]['size'] < size_min):
+                    if (self.cla[k]['length'] < self.length_min or
+                            self.cla[k]['size'] < self.size_min):
                         self.cla[k]['centroid_actor'].SetVisibility(0)
                         if k.GetVisibility() == 1:
                             k.SetVisibility(0)
@@ -243,15 +240,15 @@ class Horizon(object):
 
             slider_length.on_change = hide_clusters_length
 
-            panel2.add_element(slider_label_length, coords=(0.1, 0.333))
-            panel2.add_element(slider_length, coords=(0.4, 0.333))
+            self.panel2.add_element(slider_label_length, coords=(0.1, 0.333))
+            self.panel2.add_element(slider_length, coords=(0.4, 0.333))
 
             slider_size.on_change = hide_clusters_size
 
-            panel2.add_element(slider_label_size, coords=(0.1, 0.6666))
-            panel2.add_element(slider_size, coords=(0.4, 0.6666))
+            self.panel2.add_element(slider_label_size, coords=(0.1, 0.6666))
+            self.panel2.add_element(slider_size, coords=(0.4, 0.6666))
 
-            ren.add(panel2)
+            ren.add(self.panel2)
 
             text_block = build_label(HELP_MESSAGE, 16)  # ui.TextBlock2D()
             text_block.message = HELP_MESSAGE
@@ -267,30 +264,25 @@ class Horizon(object):
         if len(self.images) > 0:
             # !!Only first image loading supported for now')
             data, affine = self.images[0]
-            panel = slicer_panel(ren, data, affine, self.world_coords)
+            self.panel = slicer_panel(ren, data, affine, self.world_coords)
         else:
             data = None
             affine = None
 
-        # global size
         self.win_size = ren.GetSize()
 
         def win_callback(obj, event):
-            # global size
             if self.win_size != obj.GetSize():
                 size_old = self.win_size
                 self.win_size = obj.GetSize()
                 size_change = [self.win_size[0] - size_old[0], 0]
                 if data is not None:
-                    panel.re_align(size_change)
+                    self.panel.re_align(size_change)
                 if self.cluster:
-                    panel2.re_align(size_change)
+                    self.panel2.re_align(size_change)
                     help_panel.re_align(size_change)
 
         show_m.initialize()
-
-        global picked_actors
-        picked_actors = {}
 
         def left_click_centroid_callback(obj, event):
 
@@ -316,41 +308,36 @@ class Horizon(object):
             self.cla[cl]['centroid_actor'].AddObserver(
                 'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
 
-        global hide_centroids
-        hide_centroids = True
-        global select_all
-        select_all = False
+        self.hide_centroids = True
+        self.select_all = False
 
         def key_press(obj, event):
-            global opacity_level, slider_length, slider_size, length_min
-            global size_min
-            global select_all, tractogram_clusters, hide_centroids
             key = obj.GetKeySym()
             if self.cluster:
 
                 # hide on/off unselected centroids
                 if key == 'h' or key == 'H':
-                    if hide_centroids:
+                    if self.hide_centroids:
                         for ca in self.cea:
-                            if (self.cea[ca]['length'] >= length_min or
-                                    self.cea[ca]['size'] >= size_min):
+                            if (self.cea[ca]['length'] >= self.length_min or
+                                    self.cea[ca]['size'] >= self.size_min):
                                 if self.cea[ca]['selected'] == 0:
                                     ca.VisibilityOff()
                     else:
                         for ca in self.cea:
-                            if (self.cea[ca]['length'] >= length_min and
-                                    self.cea[ca]['size'] >= size_min):
+                            if (self.cea[ca]['length'] >= self.length_min and
+                                    self.cea[ca]['size'] >= self.size_min):
                                 if self.cea[ca]['selected'] == 0:
                                     ca.VisibilityOn()
-                    hide_centroids = not hide_centroids
+                    self.hide_centroids = not self.hide_centroids
                     show_m.render()
 
                 # invert selection
                 if key == 'i' or key == 'I':
 
                     for ca in self.cea:
-                        if (self.cea[ca]['length'] >= length_min and
-                                self.cea[ca]['size'] >= size_min):
+                        if (self.cea[ca]['length'] >= self.self.length_min and
+                                self.cea[ca]['size'] >= self.size_min):
                             self.cea[ca]['selected'] = \
                                 not self.cea[ca]['selected']
                             cas = self.cea[ca]['cluster_actor']
@@ -379,40 +366,49 @@ class Horizon(object):
                             indices = self.tractogram_clusters[t][c]
                             active_streamlines.extend(Streamlines(indices))
 
-                    self.tractograms = [active_streamlines]
-                    ren = self.build_renderer()
-                    self.build_show(ren)
+
+                    #self.tractograms = [active_streamlines]
+                    hz2 = horizon([active_streamlines],
+                                  self.images, cluster=True, cluster_thr=5,
+                                  random_colors=self.random_colors,
+                                  length_lt=np.inf,
+                                  length_gt=0, clusters_lt=np.inf,
+                                  clusters_gt=0,
+                                  world_coords=True,
+                                  interactive=True)
+                    ren2 = hz2.build_renderer()
+                    hz2.build_show(ren2)
 
                 if key == 'a' or key == 'A':
 
-                    if select_all is False:
+                    if self.select_all is False:
                         for ca in self.cea:
-                            if (self.cea[ca]['length'] >= length_min and
-                                    self.cea[ca]['size'] >= size_min):
+                            if (self.cea[ca]['length'] >= self.length_min and
+                                    self.cea[ca]['size'] >= self.size_min):
                                 self.cea[ca]['selected'] = 1
                                 cas = self.cea[ca]['cluster_actor']
                                 self.cla[cas]['selected'] = \
                                     self.cea[ca]['selected']
                         show_m.render()
-                        select_all = True
+                        self.select_all = True
                     else:
                         for ca in self.cea:
-                            if (self.cea[ca]['length'] >= length_min and
-                                    self.cea[ca]['size'] >= size_min):
+                            if (self.cea[ca]['length'] >= self.length_min and
+                                    self.cea[ca]['size'] >= self.size_min):
                                 self.cea[ca]['selected'] = 0
                                 cas = self.cea[ca]['cluster_actor']
                                 self.cla[cas]['selected'] = \
                                     self.cea[ca]['selected']
                         show_m.render()
-                        select_all = False
+                        self.select_all = False
 
                 if key == 'e' or key == 'E':
 
                     for c in self.cea:
                         if self.cea[c]['selected']:
                             if not self.cea[c]['expanded']:
-                                if (self.cea[c]['length'] >= length_min and
-                                        self.cea[c]['size'] >= size_min):
+                                if (self.cea[c]['length'] >= self.length_min and
+                                        self.cea[c]['size'] >= self.size_min):
                                     self.cea[c]['cluster_actor']. \
                                         VisibilityOn()
                                     c.VisibilityOff()
@@ -424,8 +420,8 @@ class Horizon(object):
 
                     for c in self.cea:
 
-                        if (self.cea[c]['length'] >= length_min and
-                                self.cea[c]['size'] >= size_min):
+                        if (self.cea[c]['length'] >= self.length_min and
+                                self.cea[c]['size'] >= self.size_min):
                             self.cea[c]['cluster_actor'].VisibilityOff()
                             c.VisibilityOn()
                             self.cea[c]['expanded'] = 0
