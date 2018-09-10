@@ -106,12 +106,12 @@ def apply_shader_new(hz, actor):
         if program is not None:
             try:
                 program.SetUniformf("selected",
-                                    hz.centroid_actors[actor]['selected'])
+                                    hz.cea[actor]['selected'])
             except KeyError:
                 pass
             try:
                 program.SetUniformf("selected",
-                                    hz.cluster_actors[actor]['selected'])
+                                    hz.cla[actor]['selected'])
             except KeyError:
                 pass
             program.SetUniformf("opacity_level", 1)
@@ -152,8 +152,8 @@ class Horizon(object):
         self.prng = np.random.RandomState(27)
         self.tractograms = tractograms
         self.images = images
-        self.centroid_actors = {}
-        self.cluster_actors = {}
+        self.cea = {}
+        self.cla = {}
         self.tractogram_clusters = {}
 
     def build_renderer(self):
@@ -203,13 +203,13 @@ class Horizon(object):
                     ren.add(cluster_actor)
 
                     # Every centroid actor is paired to a cluster actor
-                    self.centroid_actors[centroid_actor] = {
+                    self.cea[centroid_actor] = {
                         'cluster_actor': cluster_actor,
                         'cluster': i, 'tractogram': t,
                         'size': sizes[i], 'length': centroid_lengths[i],
                         'selected': 0, 'expanded': 0}
 
-                    self.cluster_actors[cluster_actor] = {
+                    self.cla[cluster_actor] = {
                         'centroid_actor': centroid_actor,
                         'cluster': i, 'tractogram': t,
                         'size': sizes[i], 'length': centroid_lengths[i],
@@ -236,8 +236,8 @@ class Horizon(object):
         if self.cluster:
 
             lengths = np.array(
-                [self.cluster_actors[c]['length'] for c in self.cluster_actors])
-            szs = [self.cluster_actors[c]['size'] for c in self.cluster_actors]
+                [self.cla[c]['length'] for c in self.cla])
+            szs = [self.cla[c]['size'] for c in self.cla]
             sizes = np.array(szs)
 
             global panel2, slider_length, slider_size
@@ -270,28 +270,28 @@ class Horizon(object):
                 global show_m, length_min, size_min, expand_all
                 length_min = np.round(slider.value)
 
-                for k in self.cluster_actors:
-                    if (self.cluster_actors[k]['length'] < length_min or
-                            self.cluster_actors[k]['size'] < size_min):
-                        self.cluster_actors[k]['centroid_actor'].SetVisibility(0)
+                for k in self.cla:
+                    if (self.cla[k]['length'] < length_min or
+                            self.cla[k]['size'] < size_min):
+                        self.cla[k]['centroid_actor'].SetVisibility(0)
                         if k.GetVisibility() == 1:
                             k.SetVisibility(0)
                     else:
-                        self.cluster_actors[k]['centroid_actor'].SetVisibility(1)
+                        self.cla[k]['centroid_actor'].SetVisibility(1)
                 show_m.render()
 
             def hide_clusters_size(slider):
                 global show_m, length_min, size_min
                 size_min = np.round(slider.value)
 
-                for k in self.cluster_actors:
-                    if (self.cluster_actors[k]['length'] < length_min or
-                            self.cluster_actors[k]['size'] < size_min):
-                        self.cluster_actors[k]['centroid_actor'].SetVisibility(0)
+                for k in self.cla:
+                    if (self.cla[k]['length'] < length_min or
+                            self.cla[k]['size'] < size_min):
+                        self.cla[k]['centroid_actor'].SetVisibility(0)
                         if k.GetVisibility() == 1:
                             k.SetVisibility(0)
                     else:
-                        self.cluster_actors[k]['centroid_actor'].SetVisibility(1)
+                        self.cla[k]['centroid_actor'].SetVisibility(1)
                 show_m.render()
 
             slider_length.on_change = hide_clusters_length
@@ -347,26 +347,26 @@ class Horizon(object):
 
         def left_click_centroid_callback(obj, event):
 
-            self.centroid_actors[obj]['selected'] = not self.centroid_actors[obj]['selected']
-            self.cluster_actors[self.centroid_actors[obj]['cluster_actor']]['selected'] = \
-                self.centroid_actors[obj]['selected']
+            self.cea[obj]['selected'] = not self.cea[obj]['selected']
+            self.cla[self.cea[obj]['cluster_actor']]['selected'] = \
+                self.cea[obj]['selected']
             show_m.render()
 
         def left_click_cluster_callback(obj, event):
 
-            if self.cluster_actors[obj]['selected']:
-                self.cluster_actors[obj]['centroid_actor'].VisibilityOn()
-                ca = self.cluster_actors[obj]['centroid_actor']
-                self.centroid_actors[ca]['selected'] = 0
+            if self.cla[obj]['selected']:
+                self.cla[obj]['centroid_actor'].VisibilityOn()
+                ca = self.cla[obj]['centroid_actor']
+                self.cea[ca]['selected'] = 0
                 obj.VisibilityOff()
-                self.centroid_actors[ca]['expanded'] = 0
+                self.cea[ca]['expanded'] = 0
 
             show_m.render()
 
-        for cl in self.cluster_actors:
+        for cl in self.cla:
             cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
                            1.0)
-            self.cluster_actors[cl]['centroid_actor'].AddObserver(
+            self.cla[cl]['centroid_actor'].AddObserver(
                 'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
 
         global hide_centroids
@@ -383,16 +383,16 @@ class Horizon(object):
                 # hide on/off unselected centroids
                 if key == 'h' or key == 'H':
                     if hide_centroids:
-                        for ca in self.centroid_actors:
-                            if (self.centroid_actors[ca]['length'] >= length_min or
-                                    self.centroid_actors[ca]['size'] >= size_min):
-                                if self.centroid_actors[ca]['selected'] == 0:
+                        for ca in self.cea:
+                            if (self.cea[ca]['length'] >= length_min or
+                                    self.cea[ca]['size'] >= size_min):
+                                if self.cea[ca]['selected'] == 0:
                                     ca.VisibilityOff()
                     else:
-                        for ca in self.centroid_actors:
-                            if (self.centroid_actors[ca]['length'] >= length_min and
-                                    self.centroid_actors[ca]['size'] >= size_min):
-                                if self.centroid_actors[ca]['selected'] == 0:
+                        for ca in self.cea:
+                            if (self.cea[ca]['length'] >= length_min and
+                                    self.cea[ca]['size'] >= size_min):
+                                if self.cea[ca]['selected'] == 0:
                                     ca.VisibilityOn()
                     hide_centroids = not hide_centroids
                     show_m.render()
@@ -400,23 +400,23 @@ class Horizon(object):
                 # invert selection
                 if key == 'i' or key == 'I':
 
-                    for ca in self.centroid_actors:
-                        if (self.centroid_actors[ca]['length'] >= length_min and
-                                self.centroid_actors[ca]['size'] >= size_min):
-                            self.centroid_actors[ca]['selected'] = \
-                                not self.centroid_actors[ca]['selected']
-                            cas = self.centroid_actors[ca]['cluster_actor']
-                            self.cluster_actors[cas]['selected'] = \
-                                self.centroid_actors[ca]['selected']
+                    for ca in self.cea:
+                        if (self.cea[ca]['length'] >= length_min and
+                                self.cea[ca]['size'] >= size_min):
+                            self.cea[ca]['selected'] = \
+                                not self.cea[ca]['selected']
+                            cas = self.cea[ca]['cluster_actor']
+                            self.cla[cas]['selected'] = \
+                                self.cea[ca]['selected']
                     show_m.render()
 
                 # save current result
                 if key == 's' or key == 'S':
                     saving_streamlines = Streamlines()
-                    for bundle in self.cluster_actors.keys():
+                    for bundle in self.cla.keys():
                         if bundle.GetVisibility():
-                            t = self.cluster_actors[bundle]['tractogram']
-                            c = self.cluster_actors[bundle]['cluster']
+                            t = self.cla[bundle]['tractogram']
+                            c = self.cla[bundle]['cluster']
                             indices = self.tractogram_clusters[t][c]
                             saving_streamlines.extend(Streamlines(indices))
                     print('Saving result in tmp.trk')
@@ -424,10 +424,10 @@ class Horizon(object):
 
                 if key == 'y' or key == 'Y':
                     active_streamlines = Streamlines()
-                    for bundle in self.cluster_actors.keys():
+                    for bundle in self.cla.keys():
                         if bundle.GetVisibility():
-                            t = self.cluster_actors[bundle]['tractogram']
-                            c = self.cluster_actors[bundle]['cluster']
+                            t = self.cla[bundle]['tractogram']
+                            c = self.cla[bundle]['cluster']
                             indices = self.tractogram_clusters[t][c]
                             active_streamlines.extend(Streamlines(indices))
 
@@ -447,49 +447,49 @@ class Horizon(object):
                 if key == 'a' or key == 'A':
 
                     if select_all is False:
-                        for ca in self.centroid_actors:
-                            if (self.centroid_actors[ca]['length'] >= length_min and
-                                    self.centroid_actors[ca]['size'] >= size_min):
-                                self.centroid_actors[ca]['selected'] = 1
-                                cas = self.centroid_actors[ca]['cluster_actor']
-                                self.cluster_actors[cas]['selected'] = \
-                                    self.centroid_actors[ca]['selected']
+                        for ca in self.cea:
+                            if (self.cea[ca]['length'] >= length_min and
+                                    self.cea[ca]['size'] >= size_min):
+                                self.cea[ca]['selected'] = 1
+                                cas = self.cea[ca]['cluster_actor']
+                                self.cla[cas]['selected'] = \
+                                    self.cea[ca]['selected']
                         show_m.render()
                         select_all = True
                     else:
-                        for ca in self.centroid_actors:
-                            if (self.centroid_actors[ca]['length'] >= length_min and
-                                    self.centroid_actors[ca]['size'] >= size_min):
-                                self.centroid_actors[ca]['selected'] = 0
-                                cas = self.centroid_actors[ca]['cluster_actor']
-                                self.cluster_actors[cas]['selected'] = \
-                                    self.centroid_actors[ca]['selected']
+                        for ca in self.cea:
+                            if (self.cea[ca]['length'] >= length_min and
+                                    self.cea[ca]['size'] >= size_min):
+                                self.cea[ca]['selected'] = 0
+                                cas = self.cea[ca]['cluster_actor']
+                                self.cla[cas]['selected'] = \
+                                    self.cea[ca]['selected']
                         show_m.render()
                         select_all = False
 
                 if key == 'e' or key == 'E':
 
-                    for c in self.centroid_actors:
-                        if self.centroid_actors[c]['selected']:
-                            if not self.centroid_actors[c]['expanded']:
-                                if (self.centroid_actors[c]['length'] >= length_min and
-                                        self.centroid_actors[c]['size'] >= size_min):
-                                    self.centroid_actors[c]['cluster_actor']. \
+                    for c in self.cea:
+                        if self.cea[c]['selected']:
+                            if not self.cea[c]['expanded']:
+                                if (self.cea[c]['length'] >= length_min and
+                                        self.cea[c]['size'] >= size_min):
+                                    self.cea[c]['cluster_actor']. \
                                         VisibilityOn()
                                     c.VisibilityOff()
-                                    self.centroid_actors[c]['expanded'] = 1
+                                    self.cea[c]['expanded'] = 1
 
                     show_m.render()
 
                 if key == 'r' or key == 'R':
 
-                    for c in self.centroid_actors:
+                    for c in self.cea:
 
-                        if (self.centroid_actors[c]['length'] >= length_min and
-                                self.centroid_actors[c]['size'] >= size_min):
-                            self.centroid_actors[c]['cluster_actor'].VisibilityOff()
+                        if (self.cea[c]['length'] >= length_min and
+                                self.cea[c]['size'] >= size_min):
+                            self.cea[c]['cluster_actor'].VisibilityOff()
                             c.VisibilityOn()
-                            self.centroid_actors[c]['expanded'] = 0
+                            self.cea[c]['expanded'] = 0
 
                 show_m.render()
 
