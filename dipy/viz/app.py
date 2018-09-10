@@ -415,9 +415,9 @@ class Horizon(object):
                     saving_streamlines = Streamlines()
                     for bundle in self.cluster_actors.keys():
                         if bundle.GetVisibility():
-                            t = cluster_actors[bundle]['tractogram']
-                            c = cluster_actors[bundle]['cluster']
-                            indices = tractogram_clusters[t][c]
+                            t = self.cluster_actors[bundle]['tractogram']
+                            c = self.cluster_actors[bundle]['cluster']
+                            indices = self.tractogram_clusters[t][c]
                             saving_streamlines.extend(Streamlines(indices))
                     print('Saving result in tmp.trk')
                     save_trk('tmp.trk', saving_streamlines, np.eye(4))
@@ -430,6 +430,11 @@ class Horizon(object):
                             c = self.cluster_actors[bundle]['cluster']
                             indices = self.tractogram_clusters[t][c]
                             active_streamlines.extend(Streamlines(indices))
+
+                    self.tractograms = [active_streamlines]
+                    ren = self.build_renderer()
+                    self.build_show(ren)
+
     #                print('Rerunning horizon')
     #                _cluster(active_streamlines, cluster_thr=5)
     #                horizon([active_streamlines], images, cluster=True,
