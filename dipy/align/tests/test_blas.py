@@ -10,8 +10,8 @@ num_threads = 1
 A = np.ones((rows, 3))
 B = np.zeros((rows, 3))
 
-#A = np.random.rand(rows, 3)
-#B = np.random.rand(rows, 3)
+# A = np.random.rand(rows, 3)
+# B = np.random.rand(rows, 3)
 
 
 from time import time

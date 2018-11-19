@@ -277,7 +277,7 @@ def _bundle_minimum_distance(double [:, ::1] static,
             for j in range(moving_size):
 
                 tmp = min_direct_flip_dist(&static[i * rows, 0],
-                                       &moving[j * rows, 0], rows)
+                                           &moving[j * rows, 0], rows)
 
                 if have_openmp:
                     openmp.omp_set_lock(&lock)
