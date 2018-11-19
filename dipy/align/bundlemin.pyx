@@ -13,6 +13,7 @@ from safe_openmp cimport have_openmp
 from cython.parallel import prange
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt, sin, cos
+from scipy.linalg.cython_blas cimport dnrm2
 from multiprocessing import cpu_count
 
 cdef cnp.dtype f64_dt = np.dtype(np.float64)
@@ -48,7 +49,6 @@ cdef double min_direct_flip_dist(double *a,double *b,
         cnp.npy_intp i=0, j=0
         double sub=0, subf=0, distf=0, dist=0, tmprow=0, tmprowf=0
 
-
     for i in range(rows):
         tmprow = 0
         tmprowf = 0
@@ -67,6 +67,64 @@ cdef double min_direct_flip_dist(double *a,double *b,
         return dist
     return distf
 
+
+cdef double min_direct_flip_dist_blas(double *a,double *b,
+                                      cnp.npy_intp rows) nogil:
+    r""" Minimum of direct and flip average (MDF) distance [Garyfallidis12]
+    between two streamlines.
+
+    Parameters
+    ----------
+    a : double pointer
+        first streamline
+    b : double pointer
+        second streamline
+    rows : number of points of the streamline
+        both tracks need to have the same number of points
+
+    Returns
+    -------
+    out : double
+        mininum of direct and flipped average distances
+
+    Reference
+    ---------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
+    """
+
+    cdef:
+        cnp.npy_intp i=0, j=0
+        double distf=0, dist=0, tmprow=0, tmprowf=0
+        double * sub = [0, 0, 0]
+        double * sub_f = [0, 0, 0]
+        int n=3, incx=0
+
+    for i in range(rows):
+        tmprow = 0
+        tmprowf = 0
+        # for j in range(3):
+        #     sub = a[i * 3 + j] - b[i * 3 + j]
+        #     subf = a[i * 3 + j] - b[(rows - 1 - i) * 3 + j]
+        #     tmprow += sub * sub
+        #     tmprowf += subf * subf
+        for j in range(3):
+            sub[j] = a[i * 3 + j] - b[i * 3 + j]
+            sub_f[j] = a[i * 3 + j] - b[(rows - 1 - i) * 3 + j]
+
+        tmprow = dnrm2(&n, sub, &incx)
+        tmprowf = dnrm2(&n, sub, &incx)
+
+        dist += tmprow
+        distf += tmprowf
+
+    dist = dist / <double>rows
+    distf = distf / <double>rows
+
+    if dist <= distf:
+        return dist
+    return distf
 
 def _bundle_minimum_distance_matrix(double [:, ::1] static,
                                     double [:, ::1] moving,
@@ -241,6 +299,115 @@ def _bundle_minimum_distance(double [:, ::1] static,
 
     return dist
 
+
+def _bundle_minimum_distance_blas(double [:, ::1] static,
+                                  double [:, ::1] moving,
+                                  cnp.npy_intp static_size,
+                                  cnp.npy_intp moving_size,
+                                  cnp.npy_intp rows,
+                                  num_threads=None):
+    """ MDF-based pairwise distance optimization function
+
+    We minimize the distance between moving streamlines of the same number of
+    points as they align with the static streamlines.
+
+    Parameters
+    -----------
+    static : array
+        Static streamlines
+    moving : array
+        Moving streamlines
+    static_size : int
+        Number of static streamlines
+    moving_size : int
+        Number of moving streamlines
+    rows : int
+        Number of points per streamline
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
+
+    Returns
+    -------
+    cost : double
+
+    Notes
+    -----
+    The difference with ``_bundle_minimum_distance_matrix`` is that it does not
+    save the full distance matrix and therefore needs much less memory.
+    """
+
+    cdef:
+        cnp.npy_intp i=0, j=0
+        double sum_i=0, sum_j=0, tmp=0
+        double inf = np.finfo('f8').max
+        double dist=0
+        double * min_j
+        double * min_i
+        openmp.omp_lock_t lock
+        int all_cores = openmp.omp_get_num_procs()
+        int threads_to_use = -1
+
+    if num_threads is not None:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(threads_to_use)
+
+    with nogil:
+
+        if have_openmp:
+            openmp.omp_init_lock(&lock)
+
+        min_j = <double *> malloc(static_size * sizeof(double))
+        min_i = <double *> malloc(moving_size * sizeof(double))
+
+        for i in range(static_size):
+            min_j[i] = inf
+
+        for j in range(moving_size):
+            min_i[j] = inf
+
+        for i in prange(static_size):
+
+            for j in range(moving_size):
+
+                tmp = min_direct_flip_dist_blas(&static[i * rows, 0],
+                                                &moving[j * rows, 0], rows)
+
+                if have_openmp:
+                    openmp.omp_set_lock(&lock)
+                if tmp < min_j[i]:
+                    min_j[i] = tmp
+
+                if tmp < min_i[j]:
+                    min_i[j] = tmp
+                if have_openmp:
+                    openmp.omp_unset_lock(&lock)
+
+        if have_openmp:
+            openmp.omp_destroy_lock(&lock)
+
+        for i in range(static_size):
+            sum_i += min_j[i]
+
+        for j in range(moving_size):
+            sum_j += min_i[j]
+
+        free(min_j)
+        free(min_i)
+
+        dist = (sum_i / <double>static_size + sum_j / <double>moving_size)
+
+        dist = 0.25 * dist * dist
+
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_num_threads(all_cores)
+
+    return dist
 
 
 def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
