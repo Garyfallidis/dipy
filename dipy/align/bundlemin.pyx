@@ -126,6 +126,17 @@ cdef double min_direct_flip_dist_blas(double *a,double *b,
         return dist
     return distf
 
+
+def pdnrm2(double [:] vector, int n, int incx):
+
+    cdef double * sub
+
+    sub = &vector[0]
+
+
+    return dnrm2(&n, sub, &incx)
+
+
 def _bundle_minimum_distance_matrix(double [:, ::1] static,
                                     double [:, ::1] moving,
                                     cnp.npy_intp static_size,
