@@ -114,7 +114,7 @@ cdef double min_direct_flip_dist_blas(double *a,double *b,
             sub_f[j] = a[i * 3 + j] - b[(rows - 1 - i) * 3 + j]
 
         tmprow = dnrm2(&n, sub, &incx)
-        tmprowf = dnrm2(&n, sub, &incx)
+        tmprowf = dnrm2(&n, sub_f, &incx)
 
         dist += tmprow
         distf += tmprowf
