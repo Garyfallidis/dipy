@@ -14,10 +14,11 @@ class HorizonFlow(Workflow):
     def get_short_name(cls):
         return 'horizon'
 
-    def run(self, input_files, cluster=False, cluster_thr=15.,
+    def run(self, input_files, grid=False, cluster=False, cluster_thr=15.,
             random_colors=False, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
-            stealth=False, out_dir='', out_stealth_png='tmp.png'):
+            stealth=False, show_labels=False, out_dir='',
+            out_stealth_png='tmp.png'):
         """ Highly interactive visualization - invert the Horizon!
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
@@ -26,6 +27,7 @@ class HorizonFlow(Workflow):
         Parameters
         ----------
         input_files : variable string
+        grid : bool
         cluster : bool
         cluster_thr : float
         random_colors : bool
@@ -35,6 +37,7 @@ class HorizonFlow(Workflow):
         clusters_lt : int
         native_coords : bool
         stealth : bool
+        show_labels : bool
         out_dir : string
         out_stealth_png : string
 
@@ -49,12 +52,16 @@ class HorizonFlow(Workflow):
         """
         verbose = True
         tractograms = []
+        tractogram_labels = []
         images = []
         pams = []
         interactive = not stealth
         world_coords = not native_coords
 
         io_it = self.get_io_iterator()
+
+        if grid is True:
+            show_labels = True
 
         for input_output in io_it:
 
@@ -72,6 +79,9 @@ class HorizonFlow(Workflow):
 
                 streamlines = nib.streamlines.load(fname).streamlines
                 tractograms.append(streamlines)
+                if show_labels is True:
+                    tractogram_labels.append(fname)
+
             elif ends('dpy'):
 
                 dpy_obj = Dpy(fname, mode='r')
@@ -97,11 +107,15 @@ class HorizonFlow(Workflow):
                     print('Peak_dirs shape')
                     print(pam.peak_dirs.shape)
 
+        if show_labels is False:
+            tractogram_labels = None
+
         horizon(tractograms=tractograms, images=images, pams=pams,
-                cluster=cluster, cluster_thr=cluster_thr,
-                random_colors=random_colors,
+                tractogram_labels=tractogram_labels, grid=grid, cluster=cluster,
+                cluster_thr=cluster_thr, random_colors=random_colors,
                 length_gt=length_gt, length_lt=length_lt,
                 clusters_gt=clusters_gt, clusters_lt=clusters_lt,
                 world_coords=world_coords,
                 interactive=interactive,
                 out_png=pjoin(out_dir, out_stealth_png))
+

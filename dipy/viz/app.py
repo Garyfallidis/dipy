@@ -80,9 +80,9 @@ HELP_MESSAGE = """
 class Horizon(object):
 
     def __init__(self, tractograms=None, images=None, pams=None,
-                 cluster=False, cluster_thr=15.0,
-                 random_colors=False, length_gt=0, length_lt=1000,
-                 clusters_gt=0, clusters_lt=10000,
+                 tractogram_labels=None, grid=False, cluster=False,
+                 cluster_thr=15.0, random_colors=False, length_gt=0,
+                 length_lt=1000, clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True,
                  out_png='tmp.png', recorded_events=None, return_showm=False):
         """ Highly interactive visualization - invert the Horizon!
@@ -94,6 +94,10 @@ class Horizon(object):
         images : sequence of tuples
             Each tuple contains data and affine
         pams : sequence of PeakAndMetrics
+        tractogram_labels : string
+            names of files
+        grid : bool
+            Enable Grid option
         cluster : bool
             Enable QuickBundlesX clustering
         cluster_thr : float
@@ -119,6 +123,7 @@ class Horizon(object):
             Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
         """
 
+        self.grid = grid
         self.cluster = cluster
         self.cluster_thr = cluster_thr
         self.random_colors = random_colors
@@ -139,6 +144,7 @@ class Horizon(object):
         self.tractogram_clusters = {}
         self.recorded_events = recorded_events
         self.show_m = None
+        self.tractogram_labels = tractogram_labels
         # self.mem = GlobalHorizon()
         self.return_showm = return_showm
 
@@ -165,86 +171,130 @@ class Horizon(object):
         """ Add streamline actors to the scene
         """
         color_gen = distinguishable_colormap()
-        for (t, streamlines) in enumerate(tractograms):
-            if self.random_colors:
-                colors = next(color_gen)
-            else:
-                colors = None
+        count = 0
 
-            if not self.world_coords:
-                # TODO we need to read the affine of a tractogram
-                # from a StatefullTractogram
-                msg = 'Currently native coordinates are not supported'
-                msg += ' for streamlines'
-                raise ValueError(msg)
+        # edit here bramsh for grid
+        if self.grid:
+            all_actors = []
+            for (t, streamlines) in enumerate(tractograms):
 
-            if self.cluster:
+                all_actors.append(actor.line(streamlines))
 
-                print(' Clustering threshold {} \n'.format(threshold))
-                clusters = qbx_and_merge(streamlines,
-                                         [40, 30, 25, 20, threshold])
-                self.tractogram_clusters[t] = clusters
-                centroids = clusters.centroids
-                print(' Number of centroids is {}'.format(len(centroids)))
-                sizes = np.array([len(c) for c in clusters])
-                linewidths = np.interp(sizes,
-                                       [sizes.min(), sizes.max()], [0.1, 2.])
-                centroid_lengths = np.array([length(c) for c in centroids])
+                self.gui = ui.GridUI(all_actors, self.tractogram_labels,
+                                     rotation_axis=None)
+                scene.background((0.5, 0.5, 0.5))
+                scene.background((0, 0, 0))
 
-                print(' Minimum number of streamlines in cluster {}'
-                      .format(sizes.min()))
+                # edit ends
 
-                print(' Maximum number of streamlines in cluster {}'
-                      .format(sizes.max()))
+        else:
 
-                print(' Construct cluster actors')
-                for (i, c) in enumerate(centroids):
+            for (t, streamlines) in enumerate(tractograms):
 
-                    centroid_actor = actor.streamtube([c], colors,
-                                                      linewidth=linewidths[i],
-                                                      lod=False)
-                    scene.add(centroid_actor)
-                    self.mem.centroid_actors.append(centroid_actor)
+                # edit here bramsh for labels
+                if self.tractogram_labels:
+                    self.pcoord = np.mean(streamlines.data, axis=0)
 
-                    cluster_actor = actor.line(clusters[i],
-                                               lod=False)
-                    cluster_actor.GetProperty().SetRenderLinesAsTubes(1)
-                    cluster_actor.GetProperty().SetLineWidth(6)
-                    cluster_actor.GetProperty().SetOpacity(1)
-                    cluster_actor.VisibilityOff()
+                    ii = int(len(streamlines)/2)
+                    jj = int(len(streamlines[ii])/2)
+                    cc1 = streamlines[ii][jj]
 
-                    scene.add(cluster_actor)
-                    self.mem.cluster_actors.append(cluster_actor)
+                    label_actor = actor.label(self.tractogram_labels[count],
+                                              self.pcoord,
+                                              scale=(2.9,2.9, 2.9),
+                                              color=(1, 1, 1))
 
-                    # Every centroid actor (cea) is paired to a cluster actor
-                    # (cla).
+                    label_actor.SetCamera(scene.GetActiveCamera())
 
-                    self.cea[centroid_actor] = {
-                        'cluster_actor': cluster_actor,
-                        'cluster': i, 'tractogram': t,
-                        'size': sizes[i], 'length': centroid_lengths[i],
-                        'selected': 0, 'expanded': 0}
+                    line_label = actor.line(Streamlines([[cc1,self.pcoord]]),
+                                            colors=(1,1,1), linewidth=3)
 
-                    self.cla[cluster_actor] = {
-                        'centroid_actor': centroid_actor,
-                        'cluster': i, 'tractogram': t,
-                        'size': sizes[i], 'length': centroid_lengths[i],
-                        'selected': 0}
-                    apply_shader(self, cluster_actor)
-                    apply_shader(self, centroid_actor)
+                    scene.add(label_actor)
+                    scene.add(line_label)
+                    count += 1
 
-            else:
+                    # edit ends
 
-                streamline_actor = actor.line(streamlines, colors=colors)
-                streamline_actor.GetProperty().SetEdgeVisibility(1)
-                streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
-                streamline_actor.GetProperty().SetLineWidth(6)
-                streamline_actor.GetProperty().SetOpacity(1)
-                scene.add(streamline_actor)
-                self.mem.streamline_actors.append(streamline_actor)
+                if self.random_colors:
+                    colors = next(color_gen)
+                else:
+                    colors = None
 
-        if not callbacks:
-            return
+                if not self.world_coords:
+                    # TODO we need to read the affine of a tractogram
+                    # from a StatefullTractogram
+                    msg = 'Currently native coordinates are not supported'
+                    msg += ' for streamlines'
+                    raise ValueError(msg)
+
+                if self.cluster:
+
+                    print(' Clustering threshold {} \n'.format(threshold))
+                    clusters = qbx_and_merge(streamlines,
+                                             [40, 30, 25, 20, threshold])
+                    self.tractogram_clusters[t] = clusters
+                    centroids = clusters.centroids
+                    print(' Number of centroids is {}'.format(len(centroids)))
+                    sizes = np.array([len(c) for c in clusters])
+                    linewidths = np.interp(sizes,
+                                           [sizes.min(), sizes.max()],
+                                           [0.1, 2.])
+                    centroid_lengths = np.array([length(c) for c in centroids])
+
+                    print(' Minimum number of streamlines in cluster {}'
+                          .format(sizes.min()))
+
+                    print(' Maximum number of streamlines in cluster {}'
+                          .format(sizes.max()))
+
+                    print(' Construct cluster actors')
+                    for (i, c) in enumerate(centroids):
+
+                        centroid_actor = actor.streamtube([c], colors,
+                                                          linewidth=linewidths[i],
+                                                          lod=False)
+                        scene.add(centroid_actor)
+                        self.mem.centroid_actors.append(centroid_actor)
+
+                        cluster_actor = actor.line(clusters[i],
+                                                   lod=False)
+                        cluster_actor.GetProperty().SetRenderLinesAsTubes(1)
+                        cluster_actor.GetProperty().SetLineWidth(6)
+                        cluster_actor.GetProperty().SetOpacity(1)
+                        cluster_actor.VisibilityOff()
+
+                        scene.add(cluster_actor)
+                        self.mem.cluster_actors.append(cluster_actor)
+
+                        # Every centroid actor (cea) is paired to a
+                        # cluster actor (cla).
+
+                        self.cea[centroid_actor] = {
+                            'cluster_actor': cluster_actor,
+                            'cluster': i, 'tractogram': t,
+                            'size': sizes[i], 'length': centroid_lengths[i],
+                            'selected': 0, 'expanded': 0}
+
+                        self.cla[cluster_actor] = {
+                            'centroid_actor': centroid_actor,
+                            'cluster': i, 'tractogram': t,
+                            'size': sizes[i], 'length': centroid_lengths[i],
+                            'selected': 0}
+                        apply_shader(self, cluster_actor)
+                        apply_shader(self, centroid_actor)
+
+                else:
+
+                    streamline_actor = actor.line(streamlines, colors=colors)
+                    streamline_actor.GetProperty().SetEdgeVisibility(1)
+                    streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
+                    streamline_actor.GetProperty().SetLineWidth(6)
+                    streamline_actor.GetProperty().SetOpacity(1)
+                    scene.add(streamline_actor)
+                    self.mem.streamline_actors.append(streamline_actor)
+
+            if not callbacks:
+                return
 
         def left_click_centroid_callback(obj, event):
 
@@ -273,6 +323,20 @@ class Horizon(object):
     def build_show(self, scene):
 
         title = 'Horizon ' + horizon_version
+
+        if self.grid:
+
+            self.show_m = window.ShowManager(scene, title=title,
+                                             size=(1200, 900),
+                                             order_transparent=True,
+                                             reset_camera=False)
+
+            self.show_m.initialize()
+            self.show_m.scene.add(self.gui)
+            self.show_m.start()
+            return
+
+
         self.show_m = window.ShowManager(scene, title=title,
                                          size=(1200, 900),
                                          order_transparent=True,
@@ -287,6 +351,7 @@ class Horizon(object):
             sizes = np.array(szs)
 
             # global self.panel2, slider_length, slider_size
+
             self.panel2 = ui.Panel2D(size=(400, 200),
                                      position=(850, 670),
                                      color=(1, 1, 1),
@@ -461,8 +526,8 @@ class Horizon(object):
             self.show_m.render()
 
         for cl in self.cla:
-            cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
-                           1.0)
+            cl.AddObserver('LeftButtonPressEvent',
+                           left_click_cluster_callback, 1.0)
             self.cla[cl]['centroid_actor'].AddObserver(
                 'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
 
@@ -615,21 +680,21 @@ class Horizon(object):
 
         if self.interactive:
 
-            self.show_m.add_window_callback(win_callback)
-            self.show_m.add_timer_callback(True, 200, timer_callback)
-            self.show_m.iren.AddObserver('KeyPressEvent', key_press)
-
-            if self.return_showm:
-                return self.show_m
-
             if self.recorded_events is None:
 
+                self.show_m.add_window_callback(win_callback)
+                self.show_m.add_timer_callback(True, 200, timer_callback)
+                self.show_m.iren.AddObserver('KeyPressEvent', key_press)
                 self.show_m.render()
                 self.show_m.start()
 
             else:
 
-                # set to True if event recorded file needs updating
+                self.show_m.add_window_callback(win_callback)
+                self.show_m.add_timer_callback(True, 200, timer_callback)
+                self.show_m.iren.AddObserver('KeyPressEvent', key_press)
+
+                # set to True if event recording needs updating
                 recording = False
                 recording_filename = self.recorded_events
 
@@ -645,8 +710,8 @@ class Horizon(object):
                           reset_camera=False)
 
 
-def horizon(tractograms=None, images=None, pams=None,
-            cluster=False, cluster_thr=15.0,
+def horizon(tractograms=None, images=None, pams=None, tractogram_labels=None,
+            grid=False, cluster=False, cluster_thr=15.0,
             random_colors=False, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10000,
             world_coords=True, interactive=True, out_png='tmp.png',
@@ -660,6 +725,10 @@ def horizon(tractograms=None, images=None, pams=None,
     images : sequence of tuples
         Each tuple contains data and affine
     pams : peaks
+    tractogram_labels : string
+        names of files
+    grid : bool
+        Enable Grid option
     cluster : bool
         Enable QuickBundlesX clustering
     cluster_thr : float
@@ -673,7 +742,7 @@ def horizon(tractograms=None, images=None, pams=None,
     interactive : bool
     out_png : string
     recorded_events : string
-        File path to replay recorded events
+    File path to replay recorded events
 
     References
     ----------
@@ -683,8 +752,8 @@ def horizon(tractograms=None, images=None, pams=None,
         adaptive visualization, Proceedings of: International Society of
         Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
     """
-    hz = Horizon(tractograms, images, pams, cluster, cluster_thr,
-                 random_colors, length_gt, length_lt,
+    hz = Horizon(tractograms, images, pams, tractogram_labels, grid,
+                 cluster, cluster_thr, random_colors, length_gt, length_lt,
                  clusters_gt, clusters_lt,
                  world_coords, interactive,
                  out_png, recorded_events, return_showm)
@@ -694,3 +763,9 @@ def horizon(tractograms=None, images=None, pams=None,
     if return_showm:
         return hz.build_show(scene)
     hz.build_show(scene)
+
+'''
+self.show_m.scene #gives renderer
+#textactor set camera (get camera)
+
+'''
