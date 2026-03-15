@@ -15,6 +15,10 @@
 #include <immintrin.h>
 #endif
 
+#ifdef _MSC_VER
+#include <immintrin.h>
+#endif
+
 namespace faiss {
 
 /*********************************************************
